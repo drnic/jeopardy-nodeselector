@@ -14,6 +14,26 @@
 
 Look up each OCI in pods/deployments/statefulsets/jobs and ensure the pods are restricted to nodes that support the image platform architecture.
 
+## Quick Demo
+
+To deploy the webhook server into the `default` namespace, including a self-signed certificate, and webhook registration:
+
+```plain
+kubectl apply -f demo/demo.yaml
+```
+
+To test the webhook with an "amd64-only" image into the newly created `multiarch-test` namespace:
+
+```plain
+kubectl run --image bitnami/nginx nginx-amd64 -n multiarch-test
+```
+
+Check that it's `nodeSelector` has been assigned automatically:
+
+```plain
+...
+```
+
 ## Local demo
 
 In one terminal, run the webhook server with some pre-created self-signed certificates:
