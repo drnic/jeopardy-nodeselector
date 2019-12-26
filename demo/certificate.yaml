@@ -1,0 +1,25 @@
+apiVersion: cert-manager.io/v1alpha2
+kind: Issuer
+metadata:
+  name: jeopary-nodeselector-demo
+  namespace: default
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: jeopary-nodeselector-demo
+  namespace: default
+spec:
+  commonName: jeopary-nodeselector.default.svc
+  secretName: jeopary-nodeselector-demo-certs
+  issuerRef:
+    name: jeopary-nodeselector-demo
+  usages:
+    - server auth
+  keySize: 2048
+  dnsNames:
+  - jeopary-nodeselector.default.svc
+  - localhost
+  - 127.0.0.1
