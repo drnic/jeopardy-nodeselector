@@ -1,3 +1,4 @@
+---
 apiVersion: v1
 type: kubernetes.io/tls
 data:
@@ -8,3 +9,112 @@ kind: Secret
 metadata:
   name: jeopardy-nodeselector-demo-certs
   namespace: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jeopardy-nodeselector
+  labels:
+    app: jeopardy-nodeselector
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: jeopardy-nodeselector
+  template:
+    metadata:
+      labels:
+        app: jeopardy-nodeselector
+    spec:
+      containers:
+        - name: server
+          image: drnic/jeopardy-nodeselector:latest
+          command: ["/usr/bin/jeopardy-nodeselector"]
+          args:
+            [
+              "-host=$(HOSTNAME)",
+              "-port=8443",
+              "-cert-path=/certs/tls.crt",
+              "-key-path=/certs/tls.key"
+            ]
+          env:
+            - name: HOSTNAME
+              value: "jeopardy-nodeselector.default.svc.cluster.local"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8443
+              name: server-tls-port
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128M"
+            limits:
+              cpu: "250m"
+              memory: "256M"
+          volumeMounts:
+            - name: certs
+              mountPath: "/certs"
+              readOnly: true
+      volumes:
+        - name: certs
+          secret:
+            secretName: jeopardy-nodeselector-demo-certs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jeopardy-nodeselector
+spec:
+  selector:
+    app: jeopardy-nodeselector
+  ports:
+    - port: 443 # Service's port
+      protocol: TCP
+      targetPort: server-tls-port
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  # Create a namespace that we'll match on
+  name: multiarch-test
+  labels:
+    multiarch: "true"
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: jeopardy-nodeselector
+webhooks:
+  - name: jeopardy-nodeselector.starkandwayne.com
+    sideEffects: None
+    # "Equivalent" provides insurance against API version upgrades/changes - e.g.
+    # extensions/v1beta1 Ingress -> networking.k8s.io/v1beta1 Ingress
+    # matchPolicy: Equivalent
+    rules:
+      - apiGroups:
+          - "*"
+        apiVersions:
+          - "*"
+        operations:
+          - "CREATE"
+          - "UPDATE"
+        resources:
+          - "pods"
+          - "deployments"
+    namespaceSelector:
+      matchExpressions:
+        # Any Namespace with a label matching the below will have its
+        # annotations validated by this admission controller
+        - key: "multiarch"
+          operator: In
+          values: ["true"]
+    failurePolicy: Fail
+    clientConfig:
+      service:
+        # This is the hostname our certificate needs in its Subject Alternative
+        # Name array - name.namespace.svc
+        # If the certificate does NOT have this name, TLS validation will fail.
+        name: jeopardy-nodeselector
+        namespace: default
+        path: "/jeopardy-nodeselector/multiarch"
+      caBundle: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURyVENDQXBXZ0F3SUJBZ0lSQUxyczlPVXp5UWVrby9aQWNNaGw0S0V3RFFZSktvWklodmNOQVFFTEJRQXcKUXpFVk1CTUdBMVVFQ2hNTVkyVnlkQzF0WVc1aFoyVnlNU293S0FZRFZRUURFeUZxWlc5d1lYSmtlUzF1YjJSbApjMlZzWldOMGIzSXVaR1ZtWVhWc2RDNXpkbU13SGhjTk1Ua3hNakkyTWpNeE9ERTBXaGNOTWpBd016STFNak14Ck9ERTBXakJETVJVd0V3WURWUVFLRXd4alpYSjBMVzFoYm1GblpYSXhLakFvQmdOVkJBTVRJV3BsYjNCaGNtUjUKTFc1dlpHVnpaV3hsWTNSdmNpNWtaV1poZFd4MExuTjJZekNDQVNJd0RRWUpLb1pJaHZjTkFRRUJCUUFEZ2dFUApBRENDQVFvQ2dnRUJBSzQxVEdlVHNpc2lwZUN0bDN2bHNkTUxMTElML3dmd3AyNEMyWUlsck1BQWdJdDNDSjdxCnZNOXpSL3cxVk1VaUhkdkNmT1ZuUVhveXk2Y2lDSHBHanZ3djZBRGdCWW9WRlhDZ1NyVnNLZUdNZG9GWk03bjMKMEJGVkQzSG1SUHJMMTNlU1ljMjVYL3F1MEVRR1plOHVXUkVjT2VKRzFZa3lTM0lQeC9VcU4wdFM5NDVWaVUzRQo1TVZmTkxEcmM2Vko3VE1iYnZDNU90S25DcVNidFhTT1pBUURnUkxFN240RnJiS3ErczVWd09uTzFha1RCOXlECjdTcHY2RmZWOTlaU1JkRTFLSk1yRzRVT0c0QVBGVXU3b2xGTUtWbVNtZ2dReWNIVkJSdTVBNWdkSzNvSUQ5MWcKTkpReXIvQ3dJb2JVeCtxczM3ZHVLT0M5M3ZSWjh6RUtRdzhDQXdFQUFhT0JtekNCbURBVEJnTlZIU1VFRERBSwpCZ2dyQmdFRkJRY0RBVEFNQmdOVkhSTUJBZjhFQWpBQU1ITUdBMVVkRVFSc01HcUNJV3BsYjNCaGNtUjVMVzV2ClpHVnpaV3hsWTNSdmNpNWtaV1poZFd4MExuTjJZNEl2YW1WdmNHRnlaSGt0Ym05a1pYTmxiR1ZqZEc5eUxtUmwKWm1GMWJIUXVjM1pqTG1Oc2RYTjBaWEl1Ykc5allXeUNDV3h2WTJGc2FHOXpkSUlKTVRJM0xqQXVNQzR4TUEwRwpDU3FHU0liM0RRRUJDd1VBQTRJQkFRQkpzcG81M3Ewam1meW0rMTlvMC9jSFphS2dGdXgyQXg2QWNramZKbFYwCi9ZMHR2VXRHVGhrRFl6QjRPSExkL2xWREZhQWNqQkpWT24wcllKVUNTODhEUmFuWmtIYXVuMWwyZm5LZjRlZ1cKZjY4ampSZWdNYndabUt4K3hta1pxSGI0NDR2VHpyUFFpSXArU3BRdDRra1dVaVFUOENBNkkxRCt6VEpqSjFBSApBbkZkY0Z5eFoyQnFMamdNSVl2a0dDK2VFaU81bW5KcVJJeVFTNzVkcGJ4bkY0UU1obTF1OFpoQmR1dndaOG1hCnlNcU1abm9SNnlpL09MMDQ3bVJkWWRITUZNK0lZQnFmVm14TkRJMU1KeE9TOUxRTmt4cEZOQm41OU9Lb3NHMCsKQ1JjbFQ1ak9sOFN0R1h5QWRwZmxidWpxYUNuVlFJZ1FIZVhBaVI4K05XTXEKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo="

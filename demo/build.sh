@@ -17,28 +17,23 @@ set -eu
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd $DIR
 
-# from certificate.yaml
+# from src/certificate.yaml
 secret=jeopardy-nodeselector-demo-build
 
-function indent() {
-  c='s/^/       /'
-  case $(uname) in
-    Darwin) sed -l "$c";;
-    *)      sed -u "$c";;
-  esac
-}
 (
   echo "--> Clean up from previous build.sh"
   set -x; set +e
-  kubectl delete -f certificate.yaml
+  kubectl delete -f src/certificate.yaml
   kubectl delete secrets $secret
   rm -f *.{crt,key}*
+  rm -f *.yaml
+  rm -f deploy/*.yaml
 )
 
 (
   echo "--> Create self-signed certificate with cert-manager"
   set -x
-  kubectl apply -f certificate.yaml
+  kubectl apply -f src/certificate.yaml
   sleep 3
   kubectl get secret $secret -n default
 )
@@ -56,6 +51,9 @@ function indent() {
 
 (
   echo "--> Create deployment files"
+  echo "+ deploy/deployment.yaml"
+  cp src/deployment.yaml deploy/
+
   echo "+ deploy/cert-secret.yaml"
   cat > deploy/cert-secret.yaml <<YAML
 apiVersion: v1
@@ -119,4 +117,15 @@ webhooks:
         path: "/jeopardy-nodeselector/multiarch"
       caBundle: "$(base64 < ca.crt)"
 YAML
+)
+
+(
+  echo "--> Create all-in-one demo.yaml deployment file"
+  rm -f demo.yaml
+  for f in deploy/*.yaml
+  do
+    [[ -e "$f" ]] || break  # handle the case of no *.yaml files
+    echo "---" >> demo.yaml
+    cat $f >> demo.yaml
+  done
 )

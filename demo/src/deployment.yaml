@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jeopardy-nodeselector
+  labels:
+    app: jeopardy-nodeselector
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: jeopardy-nodeselector
+  template:
+    metadata:
+      labels:
+        app: jeopardy-nodeselector
+    spec:
+      containers:
+        - name: server
+          image: drnic/jeopardy-nodeselector:latest
+          command: ["/usr/bin/jeopardy-nodeselector"]
+          args:
+            [
+              "-host=$(HOSTNAME)",
+              "-port=8443",
+              "-cert-path=/certs/tls.crt",
+              "-key-path=/certs/tls.key"
+            ]
+          env:
+            - name: HOSTNAME
+              value: "jeopardy-nodeselector.default.svc.cluster.local"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8443
+              name: server-tls-port
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128M"
+            limits:
+              cpu: "250m"
+              memory: "256M"
+          volumeMounts:
+            - name: certs
+              mountPath: "/certs"
+              readOnly: true
+      volumes:
+        - name: certs
+          secret:
+            secretName: jeopardy-nodeselector-demo-certs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jeopardy-nodeselector
+spec:
+  selector:
+    app: jeopardy-nodeselector
+  ports:
+    - port: 443 # Service's port
+      protocol: TCP
+      targetPort: server-tls-port
