@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  # Create a namespace that we'll match on
+  name: multiarch-test
+  labels:
+    multiarch: "true"
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: jeopardy-nodeselector
+webhooks:
+  - name: jeopardy-nodeselector.starkandwayne.com
+    sideEffects: None
+    # "Equivalent" provides insurance against API version upgrades/changes - e.g.
+    # extensions/v1beta1 Ingress -> networking.k8s.io/v1beta1 Ingress
+    # matchPolicy: Equivalent
+    rules:
+      - apiGroups:
+          - "*"
+        apiVersions:
+          - "*"
+        operations:
+          - "CREATE"
+          - "UPDATE"
+        resources:
+          - "pods"
+          - "deployments"
+    namespaceSelector:
+      matchExpressions:
+        # Any Namespace with a label matching the below will have its
+        # annotations validated by this admission controller
+        - key: "multiarch"
+          operator: In
+          values: ["true"]
+    failurePolicy: Fail
+    clientConfig:
+      service:
+        # This is the hostname our certificate needs in its Subject Alternative
+        # Name array - name.namespace.svc
+        # If the certificate does NOT have this name, TLS validation will fail.
+        name: jeopardy-nodeselector
+        namespace: default
+        path: "/jeopardy-nodeselector/multiarch"
+      caBundle: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURyVENDQXBXZ0F3SUJBZ0lSQVB2TjM1K2dHMTFsbmNFbGpibjlETTh3RFFZSktvWklodmNOQVFFTEJRQXcKUXpFVk1CTUdBMVVFQ2hNTVkyVnlkQzF0WVc1aFoyVnlNU293S0FZRFZRUURFeUZxWlc5d1lYSmtlUzF1YjJSbApjMlZzWldOMGIzSXVaR1ZtWVhWc2RDNXpkbU13SGhjTk1Ua3hNakkyTWpNeE1ERXdXaGNOTWpBd016STFNak14Ck1ERXdXakJETVJVd0V3WURWUVFLRXd4alpYSjBMVzFoYm1GblpYSXhLakFvQmdOVkJBTVRJV3BsYjNCaGNtUjUKTFc1dlpHVnpaV3hsWTNSdmNpNWtaV1poZFd4MExuTjJZekNDQVNJd0RRWUpLb1pJaHZjTkFRRUJCUUFEZ2dFUApBRENDQVFvQ2dnRUJBTktEVXFOdHBMS1NUU09uTDR6STdFZkNBTzE1emJ3Yzk2YUUwM0xPYnpoZ0tteWw5TnVQCm5SRmw3V3kwVHUxN0x1N0NSVTVTRVJpMWUrM001eFRObWExNnA1bWo1TFdHbXptblZpUnBOYmpxeEtkZW5jUzQKTXNONUhWY1RvRG80Q0Y5S0x5MkJwSFk2eDlkK0RMTEMrM0M2bEZ6S1BKajZZWnlWYUQxQ2JwMkpnS0o0RWpWdApYUjBxSFBvZXFxeG9mS1hKRnkwN1NiZFRBMlFGaW9MWHp5cEVJRWgzbHIzOXBCYXVtdlM3Z0N5bGs4ak9RUVd0CmRxL1F1OEpjK3FRaDVTUGFEU3VMVlNEZzFROVVINlB3Q3IyZ3BPV2I3Y1RQQWJidndlVnRBUnNBMEcrRG5QNncKdmRjeUxEcW9ZazFhSkV1U1NFVUcyVW9zeG1IT1FSUGdvc01DQXdFQUFhT0JtekNCbURBVEJnTlZIU1VFRERBSwpCZ2dyQmdFRkJRY0RBVEFNQmdOVkhSTUJBZjhFQWpBQU1ITUdBMVVkRVFSc01HcUNJV3BsYjNCaGNtUjVMVzV2ClpHVnpaV3hsWTNSdmNpNWtaV1poZFd4MExuTjJZNEl2YW1WdmNHRnlaSGt0Ym05a1pYTmxiR1ZqZEc5eUxtUmwKWm1GMWJIUXVjM1pqTG1Oc2RYTjBaWEl1Ykc5allXeUNDV3h2WTJGc2FHOXpkSUlKTVRJM0xqQXVNQzR4TUEwRwpDU3FHU0liM0RRRUJDd1VBQTRJQkFRQ0pXVE1oNkwwTitFZzJNVjVPbmJHbDZ0Ynl5aWFwN0FlWFQ5MTREYkhKCitodHJ5M2U0TlczNytsVzBmMDBaMFJhNVRzSjRpWWVYdHNac2xNRmtmcjdQZkREVzZEOGYvNGExTUJ2WUpIdCsKNEJDa2cyZytsUTRNYW5qWWY4cnVUOVR4MlNlQlgwS3RLVWFPMWVqam1tUENpR1hzMVBwczlWWTNpVnJ5M3kvYgpyN2ZCTTA5QllmdnR4bHpOMndFZ3hjRzFFYWl6WlNMM2oybGVEOEgrNENkUXNBdWd2bEhCd2dUSVR0Vkd5UlBECkVTcVhwTUlGSHJISXpOd0FCTnRxeE95WGZHMThEQVZPOVJ1YTFNRWN6aTA0NVc3a2NHb201OUZtTWdsZC9TSHAKYjRkREQ1dGM2SXRhN0N0M252YWxEYWl1ZkkycDUwam82MDNyR0VoRk02NUoKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo="

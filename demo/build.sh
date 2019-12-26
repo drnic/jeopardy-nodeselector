@@ -4,7 +4,7 @@
 # is changed. It generates a certificate pair for an HTTPS server that might
 # be run either on:
 # * 127.0.0.1/localhost, or
-# * as service jeopary-nodeselector in default namespace.
+# * as service jeopardy-nodeselector in default namespace.
 # This should allow people to quickly experiment with the webhook
 # before ultimately deciding where it should be installed and with what
 # certificates. It also allows for local integration testing.
@@ -18,8 +18,15 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd $DIR
 
 # from certificate.yaml
-secret=jeopary-nodeselector-demo-certs
+secret=jeopardy-nodeselector-demo-build
 
+function indent() {
+  c='s/^/       /'
+  case $(uname) in
+    Darwin) sed -l "$c";;
+    *)      sed -u "$c";;
+  esac
+}
 (
   echo "--> Clean up from previous build.sh"
   set -x; set +e
@@ -41,10 +48,75 @@ secret=jeopary-nodeselector-demo-certs
   set -x
   kubectl get secrets $secret -ojsonpath='{.data.ca\.crt}' | base64 --decode > \
     ca.crt
-  kubectl get secrets $secret -ojsonpath='{.data.ca\.crt}' > \
-    ca.crt.base64
   kubectl get secrets $secret -ojsonpath='{.data.tls\.crt}' | base64 --decode > \
     tls.crt
   kubectl get secrets $secret -ojsonpath='{.data.tls\.key}' | base64 --decode > \
     tls.key
+)
+
+(
+  echo "--> Create deployment files"
+  echo "+ deploy/cert-secret.yaml"
+  cat > deploy/cert-secret.yaml <<YAML
+apiVersion: v1
+type: kubernetes.io/tls
+data:
+  ca.crt:  $(base64 < ca.crt)
+  tls.crt: $(base64 < tls.crt)
+  tls.key: $(base64 < tls.key)
+kind: Secret
+metadata:
+  name: jeopardy-nodeselector-demo-certs
+  namespace: default
+YAML
+
+  echo "+ deploy/webhook-config.yaml"
+  cat > deploy/webhook-config.yaml <<YAML
+apiVersion: v1
+kind: Namespace
+metadata:
+  # Create a namespace that we'll match on
+  name: multiarch-test
+  labels:
+    multiarch: "true"
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: jeopardy-nodeselector
+webhooks:
+  - name: jeopardy-nodeselector.starkandwayne.com
+    sideEffects: None
+    # "Equivalent" provides insurance against API version upgrades/changes - e.g.
+    # extensions/v1beta1 Ingress -> networking.k8s.io/v1beta1 Ingress
+    # matchPolicy: Equivalent
+    rules:
+      - apiGroups:
+          - "*"
+        apiVersions:
+          - "*"
+        operations:
+          - "CREATE"
+          - "UPDATE"
+        resources:
+          - "pods"
+          - "deployments"
+    namespaceSelector:
+      matchExpressions:
+        # Any Namespace with a label matching the below will have its
+        # annotations validated by this admission controller
+        - key: "multiarch"
+          operator: In
+          values: ["true"]
+    failurePolicy: Fail
+    clientConfig:
+      service:
+        # This is the hostname our certificate needs in its Subject Alternative
+        # Name array - name.namespace.svc
+        # If the certificate does NOT have this name, TLS validation will fail.
+        name: jeopardy-nodeselector
+        namespace: default
+        path: "/jeopardy-nodeselector/multiarch"
+      caBundle: "$(base64 < ca.crt)"
+YAML
 )

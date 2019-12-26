@@ -33,3 +33,22 @@ Available routes:
 /jeopardy-nodeselector
 /jeopardy-nodeselector/multiarch
 ```
+
+## Build
+
+To build the OCI (docker image) for multiple architectures:
+
+```plain
+docker buildx build --progress=plain \
+  --platform linux/amd64,linux/arm/v7,linux/arm64 \
+  --push \
+  --tag docker.io/drnic/jeopardy-nodeselector \
+  .
+```
+
+For just a single architecture:
+
+```plain
+docker build -t drnic/jeopardy-nodeselector .
+docker push drnic/jeopardy-nodeselector
+```
