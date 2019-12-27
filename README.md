@@ -43,6 +43,12 @@ Events:
   Normal  Pulling    5s         kubelet, my-amd64-node  Pulling image "bitnami/nginx"
 ```
 
+To clean up the webhook service, configuration, and the demo namespace:
+
+```plain
+kubectl delete -f demo/demo.yaml
+```
+
 ## Local demo
 
 In one terminal, run the webhook server with some pre-created self-signed certificates:
