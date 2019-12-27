@@ -36,7 +36,11 @@ Check that it's `nodeSelector` has been assigned automatically:
 $ kubectl describe pod -n multiarch-test
 ...
 Node-Selectors:  kubernetes.io/arch=amd64
-...
+Events:
+  Type    Reason     Age        From                 Message
+  ----    ------     ----       ----                 -------
+  Normal  Scheduled  <unknown>  default-scheduler       Successfully assigned multiarch-test/nginx-amd64-684b5dd9bd-cv6qb to my-amd64-node
+  Normal  Pulling    5s         kubelet, my-amd64-node  Pulling image "bitnami/nginx"
 ```
 
 ## Local demo
