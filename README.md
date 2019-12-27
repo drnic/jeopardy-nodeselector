@@ -1,5 +1,7 @@
 # Jeopardy Node Selector
 
+**STATUS:** Still in initial development. The demo below does install; though currently it hard-codes all `nodeSelector` to `kubernetes.io/arch=amd64`. Will finish it soon.
+
 ```script
 "I'll take 'Random Docker images off the Internet' for $200"
 "binami/nginx"
