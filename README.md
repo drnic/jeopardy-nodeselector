@@ -31,6 +31,9 @@ kubectl run --image bitnami/nginx nginx-amd64 -n multiarch-test
 Check that it's `nodeSelector` has been assigned automatically:
 
 ```plain
+$ kubectl describe pod -n multiarch-test
+...
+Node-Selectors:  kubernetes.io/arch=amd64
 ...
 ```
 

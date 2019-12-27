@@ -42,6 +42,7 @@ func NodeSelectorMultiArch(ignoredNamespaces []string) admissioncontrol.AdmitFun
 		// Extract the necessary metadata from our known Kinds
 		switch kind {
 		case "Pod":
+			pod = &core.Pod{}
 			if _, _, err := deserializer.Decode(admissionReview.Request.Object.Raw, nil, pod); err != nil {
 				return nil, err
 			}
