@@ -1,7 +1,6 @@
 package mutate
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"golang.org/x/xerrors"
@@ -37,7 +36,6 @@ func NodeSelectorMultiArch(ignoredNamespaces []string) admissioncontrol.AdmitFun
 		annotations := make(map[string]string)
 		var podSpec *core.PodSpec
 		var pod *core.Pod
-		relativePatchPath := "/spec/template"
 
 		// Extract the necessary metadata from our known Kinds
 		switch kind {
@@ -48,7 +46,6 @@ func NodeSelectorMultiArch(ignoredNamespaces []string) admissioncontrol.AdmitFun
 			}
 
 			namespace = pod.GetNamespace()
-			relativePatchPath = ""
 		case "Deployment":
 			deployment := apps.Deployment{}
 			if _, _, err := deserializer.Decode(admissionReview.Request.Object.Raw, nil, &deployment); err != nil {
@@ -96,38 +93,12 @@ func NodeSelectorMultiArch(ignoredNamespaces []string) admissioncontrol.AdmitFun
 		} else {
 			fmt.Printf("pod: %#v\n", pod)
 		}
-		patch := patchFromSingleArchRestriction("amd64", relativePatchPath)
-		if patch != nil {
-			patchStr, err := json.Marshal(patch)
-			if err != nil {
-				return resp, err
-			}
-			resp.Patch = patchStr
-		}
-		fmt.Printf("patch: %#v\n", patch)
+
+		podInspect := NewFromPodOrPodSpec(pod, podSpec)
+		fmt.Printf("podInspect: %#v\n", podInspect)
+
+		podInspect.ApplyPatchToAdmissionResponse(resp)
 
 		return resp, nil
 	}
-}
-
-// nodeSelectorPodPatch describes a proposed JSONPatch to a Pod
-type nodeSelectorPodPatch struct {
-	Op    string            `json:"op"`
-	Path  string            `json:"path"`
-	Value map[string]string `json:"value"`
-}
-
-func patchFromSingleArchRestriction(restrictArch string, relativePatchPath string) *[]nodeSelectorPodPatch {
-	if len(restrictArch) > 0 {
-		return &[]nodeSelectorPodPatch{
-			nodeSelectorPodPatch{
-				Op:   "replace",
-				Path: fmt.Sprintf("%s/spec/nodeSelector", relativePatchPath),
-				Value: map[string]string{
-					"kubernetes.io/arch": restrictArch,
-				},
-			},
-		}
-	}
-	return nil
 }
