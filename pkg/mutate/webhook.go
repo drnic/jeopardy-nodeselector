@@ -35,17 +35,20 @@ func NodeSelectorMultiArch(ignoredNamespaces []string) admissioncontrol.AdmitFun
 		var namespace string
 		annotations := make(map[string]string)
 		var podSpec *core.PodSpec
-		var pod *core.Pod
+		// patch path is common for everything except raw Pod
+		relativePatchPath := "/spec/template"
 
 		// Extract the necessary metadata from our known Kinds
 		switch kind {
 		case "Pod":
-			pod = &core.Pod{}
+			pod := &core.Pod{}
 			if _, _, err := deserializer.Decode(admissionReview.Request.Object.Raw, nil, pod); err != nil {
 				return nil, err
 			}
 
 			namespace = pod.GetNamespace()
+			podSpec = &pod.Spec
+			relativePatchPath = ""
 		case "Deployment":
 			deployment := apps.Deployment{}
 			if _, _, err := deserializer.Decode(admissionReview.Request.Object.Raw, nil, &deployment); err != nil {
@@ -88,13 +91,9 @@ func NodeSelectorMultiArch(ignoredNamespaces []string) admissioncontrol.AdmitFun
 		}
 
 		fmt.Printf("namespace: %s, annotations: %v\n", namespace, annotations)
-		if pod == nil {
-			fmt.Printf("kind: %s, podSpec: %#v\n", kind, podSpec)
-		} else {
-			fmt.Printf("pod: %#v\n", pod)
-		}
+		fmt.Printf("kind: %s, podSpec: %#v\n", kind, podSpec)
 
-		podInspect := NewFromPodOrPodSpec(pod, podSpec)
+		podInspect := NewFromPodSpec(podSpec, relativePatchPath)
 		fmt.Printf("podInspect: %#v\n", podInspect)
 
 		podInspect.ApplyPatchToAdmissionResponse(resp)

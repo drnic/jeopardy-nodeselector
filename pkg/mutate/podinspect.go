@@ -9,7 +9,6 @@ import (
 )
 
 type PodInspectImpl struct {
-	pod               *core.Pod
 	podSpec           *core.PodSpec
 	relativePatchPath string
 }
@@ -19,20 +18,17 @@ type PodInpsect interface {
 }
 
 // NewFromPodOrPodSpec consumes either a Pod or PodSpec
-func NewFromPodOrPodSpec(pod *core.Pod, podSpec *core.PodSpec) *PodInspectImpl {
+func NewFromPodSpec(podSpec *core.PodSpec, relativePatchPath string) *PodInspectImpl {
 	podImpl := &PodInspectImpl{
-		pod:               pod,
 		podSpec:           podSpec,
-		relativePatchPath: "/spec/template",
-	}
-	if podImpl != nil {
-		podImpl.relativePatchPath = ""
+		relativePatchPath: relativePatchPath,
 	}
 	return podImpl
 }
 
 // ApplyPatchToAdmissionResponse applies a patch to
 func (pod *PodInspectImpl) ApplyPatchToAdmissionResponse(resp *admission.AdmissionResponse) error {
+	fmt.Printf("images: %v\n", pod.containerImages())
 	patch := pod.patchFromSingleArchRestriction("amd64")
 	if patch != nil {
 		patchStr, err := json.Marshal(patch)
@@ -65,4 +61,23 @@ func (pod *PodInspectImpl) patchFromSingleArchRestriction(restrictArch string) *
 		}
 	}
 	return nil
+}
+
+// containerImages composes a list of the images (uri:tag)
+// It is a unique list, with duplicates already removed.
+func (pod *PodInspectImpl) containerImages() (images []string) {
+	uniqImages := map[string]bool{}
+	for _, c := range pod.podSpec.InitContainers {
+		if _, ok := uniqImages[c.Image]; !ok {
+			images = append(images, c.Image)
+			uniqImages[c.Image] = true
+		}
+	}
+	for _, c := range pod.podSpec.Containers {
+		if _, ok := uniqImages[c.Image]; !ok {
+			images = append(images, c.Image)
+			uniqImages[c.Image] = true
+		}
+	}
+	return
 }
