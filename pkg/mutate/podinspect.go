@@ -30,7 +30,8 @@ type PodInspectImpl struct {
 	patchApplied                 *[]nodeSelectorPodPatch
 	containerImagesArchitectures *map[string][]string
 
-	imageQuery mquery.ImageQuery
+	imageQuery    mquery.ImageQuery
+	nodeArchQuery NodeArchQuery
 }
 
 // NewFromPodSpec consumes either a Pod or PodSpec
@@ -39,6 +40,7 @@ func NewFromPodSpec(podSpec *core.PodSpec, relativePatchPath string) *PodInspect
 		podSpec:           podSpec,
 		relativePatchPath: relativePatchPath,
 		imageQuery:        mquery.ImageQueryImpl{},
+		nodeArchQuery:     &NodeArchQueryImpl{},
 	}
 	return podImpl
 }
@@ -65,7 +67,12 @@ func (pod *PodInspectImpl) ApplyPatchToAdmissionResponse(resp *admission.Admissi
 		return nil
 	}
 
-	someImagesHaveManifest, commonArchs := pod.commonImageArchitectures()
+	nodeArchs, err := pod.nodeArchQuery.NodeArchs()
+	if err != nil {
+		return err
+	}
+
+	someImagesHaveManifest, commonArchs := pod.commonImageArchitectures(nodeArchs)
 	patch := pod.patchFromSingleArchRestriction(defaultNodeArch)
 	if !someImagesHaveManifest {
 		fmt.Printf("no images specify multiarch manifest, so defaulting nodeSelector to %v\n", defaultNodeArch)
@@ -74,6 +81,7 @@ func (pod *PodInspectImpl) ApplyPatchToAdmissionResponse(resp *admission.Admissi
 	} else {
 		// For now, just pick the first item from list of common required archs
 		// TODO: we need new node labels to allow more flexible allocation of pods to 2+ architectures if images support them
+		// TODO: must pick an arch that is supported by actual nodes
 		patch = pod.patchFromSingleArchRestriction(commonArchs[0])
 	}
 	if patch != nil {
@@ -156,10 +164,12 @@ func (pod *PodInspectImpl) discoverContainerImagesArchitectures() error {
 // provided by the list of images being used by a PodSpec.
 // If all images are unknown, then commonArchs = [], and someImagesKnown = false
 // If some images are known, but no common architectures then commonArchs = [], but someImagesKnown = true
-func (pod *PodInspectImpl) commonImageArchitectures() (someImagesKnown bool, commonArchs []string) {
-	start := true
+// TODO: must pick an arch that is supported by actual nodes; start intersection loop with node arch list
+func (pod *PodInspectImpl) commonImageArchitectures(nodeArchs []string) (someImagesKnown bool, commonArchs []string) {
+	commonArchs = nodeArchs
+
 	for _, imageArchs := range *pod.containerImagesArchitectures {
-		fmt.Printf("start: %t, commonArchs: %#v, imageArchs: %#v\n", start, commonArchs, imageArchs)
+		fmt.Printf("commonArchs: %#v, imageArchs: %#v\n", commonArchs, imageArchs)
 		if imageArchs != nil || len(imageArchs) > 0 {
 			someImagesKnown = true
 		}
@@ -170,20 +180,15 @@ func (pod *PodInspectImpl) commonImageArchitectures() (someImagesKnown bool, com
 	}
 
 	for _, imageArchs := range *pod.containerImagesArchitectures {
-		fmt.Printf("start: %t, commonArchs: %#v, imageArchs: %#v\n", start, commonArchs, imageArchs)
-		if start {
-			commonArchs = imageArchs
-			start = false
-		} else {
-			// Using https://github.com/adam-hanna/arrayOperations#intersect
-			z, ok := arrayOp.Intersect(commonArchs, imageArchs)
-			if !ok {
-				return someImagesKnown, []string{}
-			}
-			commonArchs, ok = z.Interface().([]string)
-			if !ok {
-				return someImagesKnown, []string{}
-			}
+		fmt.Printf("commonArchs: %#v, imageArchs: %#v\n", commonArchs, imageArchs)
+		// Using https://github.com/adam-hanna/arrayOperations#intersect
+		z, ok := arrayOp.Intersect(commonArchs, imageArchs)
+		if !ok {
+			return someImagesKnown, []string{}
+		}
+		commonArchs, ok = z.Interface().([]string)
+		if !ok {
+			return someImagesKnown, []string{}
 		}
 	}
 	fmt.Printf("end: commonArchs: %#v\n", commonArchs)
