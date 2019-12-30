@@ -9,17 +9,24 @@ import (
 	core "k8s.io/api/core/v1"
 )
 
+// PodInpsect describes interface for modifying an admission controller response
+// Implemented by PodInspectImpl
+// TODO: PodInpsect is not currently used by any fake implementations
+type PodInpsect interface {
+	ApplyPatchToAdmissionResponse(resp *admission.AdmissionResponse)
+}
+
+// PodInspectImpl describes how to modify an admission controller response
+// to mutate a Pod/Deployment/etc to set the nodeSelector of their PodSpec
+// to ensure the Pod is allocated to a subset of Nodes that are capable of
+// running the Pod's Containers' images.
 type PodInspectImpl struct {
 	podSpec           *core.PodSpec
 	relativePatchPath string
 	imageQuery        mquery.ImageQuery
 }
 
-type PodInpsect interface {
-	ApplyPatchToAdmissionResponse(resp *admission.AdmissionResponse)
-}
-
-// NewFromPodOrPodSpec consumes either a Pod or PodSpec
+// NewFromPodSpec consumes either a Pod or PodSpec
 func NewFromPodSpec(podSpec *core.PodSpec, relativePatchPath string) *PodInspectImpl {
 	podImpl := &PodInspectImpl{
 		podSpec:           podSpec,
