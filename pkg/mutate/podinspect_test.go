@@ -59,9 +59,9 @@ func TestUnknownImageNoPatch(t *testing.T) {
 	}
 	pod := NewFromPodSpec(&podSpec, "/spec/template")
 	pod.imageQuery = FakeSingleImageQuery{nil, false, nil}
-	architectures, err := pod.containerImagesArchitectures()
+	err := pod.discoverContainerImagesArchitectures()
 	assert.NoError(t, err, "unknown image should not result in error")
-	assert.Equal(t, 0, len(architectures), "unknown image should be ignored")
+	assert.Equal(t, 0, len(*pod.containerImagesArchitectures), "unknown image should be ignored")
 
 	resp := newAdmissionResponse()
 	err = pod.ApplyPatchToAdmissionResponse(resp)
@@ -78,10 +78,10 @@ func TestNoManifestImageDefaultToAMD64Only(t *testing.T) {
 	}
 	pod := NewFromPodSpec(&podSpec, "/spec/template")
 	pod.imageQuery = FakeSingleImageQuery{nil, true, nil}
-	architectures, err := pod.containerImagesArchitectures()
+	err := pod.discoverContainerImagesArchitectures()
 	assert.NoError(t, err, "should not result in error")
 	expected := map[string][]string{"bitnami/nginx:latest": nil}
-	assert.Equal(t, expected, architectures, "image is published without a manifest")
+	assert.Equal(t, expected, *pod.containerImagesArchitectures, "image is published without a manifest")
 
 	resp := newAdmissionResponse()
 	err = pod.ApplyPatchToAdmissionResponse(resp)
@@ -90,13 +90,13 @@ func TestNoManifestImageDefaultToAMD64Only(t *testing.T) {
 	assert.Equal(t, expectedPatch("amd64"), pod.patchApplied, "expected patch mismatch")
 }
 
-func TestManyContainersImageManifestSomeArchitectures(t *testing.T) {
+func TestManyArchitecturesButSingleCommonArch(t *testing.T) {
 	podSpec := core.PodSpec{
 		Containers: []core.Container{
 			core.Container{Image: "nginx"},
 			core.Container{Image: "nginx"},
-			core.Container{Image: "nginx2"},
-			core.Container{Image: "nginx3"},
+			core.Container{Image: "nginx-armv7"},
+			core.Container{Image: "nginx-many"},
 		},
 		InitContainers: []core.Container{
 			core.Container{Image: "nginx"},
@@ -105,19 +105,25 @@ func TestManyContainersImageManifestSomeArchitectures(t *testing.T) {
 	}
 	pod := NewFromPodSpec(&podSpec, "/spec/template")
 	pod.imageQuery = FakeManyImagesQuery{
-		"nginx":  FakeSingleImageQuery{[]string{"amd64", "arm64"}, true, nil},
-		"nginx2": FakeSingleImageQuery{[]string{"amd64"}, true, nil},
-		"nginx3": FakeSingleImageQuery{[]string{"amd64", "arm64"}, true, nil},
-		"nginx4": FakeSingleImageQuery{[]string{"ignored"}, true, nil},
+		"nginx":       FakeSingleImageQuery{[]string{"amd64", "armv7"}, true, nil},
+		"nginx-armv7": FakeSingleImageQuery{[]string{"armv7"}, true, nil},
+		"nginx-many":  FakeSingleImageQuery{[]string{"amd64", "arm64", "armv7"}, true, nil},
+		"nginx4":      FakeSingleImageQuery{[]string{"ignored"}, true, nil},
 	}
-	architectures, err := pod.containerImagesArchitectures()
+	err := pod.discoverContainerImagesArchitectures()
 	assert.NoError(t, err, "should not result in error")
 	expected := map[string][]string{
-		"nginx":  []string{"amd64", "arm64"},
-		"nginx2": []string{"amd64"},
-		"nginx3": []string{"amd64", "arm64"},
+		"nginx":       []string{"amd64", "armv7"},
+		"nginx-armv7": []string{"armv7"},
+		"nginx-many":  []string{"amd64", "arm64", "armv7"},
 	}
-	assert.Equal(t, expected, architectures, "image is published with a manifest")
+	assert.Equal(t, expected, *pod.containerImagesArchitectures, "image is published with a manifest")
+
+	resp := newAdmissionResponse()
+	err = pod.ApplyPatchToAdmissionResponse(resp)
+	assert.NoError(t, err, "no error expected when applying patch")
+	assert.NotEqual(t, []byte("[]"), resp.Patch, "expect some patch to be applied")
+	assert.Equal(t, expectedPatch("armv7"), pod.patchApplied, "expected patch mismatch")
 }
 
 func expectedPatch(arch string) *[]nodeSelectorPodPatch {
@@ -126,7 +132,7 @@ func expectedPatch(arch string) *[]nodeSelectorPodPatch {
 			Op:   "replace",
 			Path: "/spec/template/spec/nodeSelector",
 			Value: map[string]string{
-				"kubernetes.io/arch": "amd64",
+				"kubernetes.io/arch": arch,
 			},
 		},
 	}

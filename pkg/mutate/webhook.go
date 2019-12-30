@@ -17,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
+// NodeSelectorMultiArch constructs an AdmitFunc to perform this project's primary functions
 func NodeSelectorMultiArch(ignoredNamespaces []string) admissioncontrol.AdmitFunc {
 	return func(admissionReview *admission.AdmissionReview) (*admission.AdmissionResponse, error) {
 		kind := admissionReview.Request.Kind.Kind
