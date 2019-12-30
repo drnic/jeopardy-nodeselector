@@ -24,7 +24,7 @@ func NewFromPodSpec(podSpec *core.PodSpec, relativePatchPath string) *PodInspect
 	podImpl := &PodInspectImpl{
 		podSpec:           podSpec,
 		relativePatchPath: relativePatchPath,
-		imageQuery:        &mquery.ImageQueryImpl{},
+		imageQuery:        mquery.ImageQueryImpl{},
 	}
 	return podImpl
 }
