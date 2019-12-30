@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/starkandwayne/jeopardy-nodeselector/pkg/mquery"
 	admission "k8s.io/api/admission/v1beta1"
 	core "k8s.io/api/core/v1"
 )
@@ -28,7 +29,11 @@ func NewFromPodSpec(podSpec *core.PodSpec, relativePatchPath string) *PodInspect
 
 // ApplyPatchToAdmissionResponse applies a patch to
 func (pod *PodInspectImpl) ApplyPatchToAdmissionResponse(resp *admission.AdmissionResponse) error {
-	fmt.Printf("images: %v\n", pod.containerImages())
+	multiarchMapping, err := pod.containerImagesArchitectures()
+	if err != nil {
+		return err
+	}
+	fmt.Printf("image archs: %#v\n", multiarchMapping)
 	patch := pod.patchFromSingleArchRestriction("amd64")
 	if patch != nil {
 		patchStr, err := json.Marshal(patch)
@@ -77,6 +82,21 @@ func (pod *PodInspectImpl) containerImages() (images []string) {
 		if _, ok := uniqImages[c.Image]; !ok {
 			images = append(images, c.Image)
 			uniqImages[c.Image] = true
+		}
+	}
+	return
+}
+
+func (pod *PodInspectImpl) containerImagesArchitectures() (mapping map[string][]string, err error) {
+	mapping = map[string][]string{}
+	for _, image := range pod.containerImages() {
+		architectures, found, err := mquery.LookupImageArchitectures(image)
+		if err != nil {
+			return mapping, err
+		}
+		// If image not found, then assume its private and supports all required architectures
+		if found {
+			mapping[image] = architectures
 		}
 	}
 	return

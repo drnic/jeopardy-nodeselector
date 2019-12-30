@@ -8,6 +8,9 @@ import (
 	"time"
 )
 
+// TODO: support caching
+// TODO: support explicit override for known images (e.g. private)
+
 // https://github.com/estesp/mquery
 
 type mQueryResponse struct {
