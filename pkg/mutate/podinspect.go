@@ -23,7 +23,10 @@ type PodInpsect interface {
 type PodInspectImpl struct {
 	podSpec           *core.PodSpec
 	relativePatchPath string
-	imageQuery        mquery.ImageQuery
+
+	patchApplied *[]nodeSelectorPodPatch
+
+	imageQuery mquery.ImageQuery
 }
 
 // NewFromPodSpec consumes either a Pod or PodSpec
@@ -50,6 +53,14 @@ func (pod *PodInspectImpl) ApplyPatchToAdmissionResponse(resp *admission.Admissi
 		return err
 	}
 	fmt.Printf("image archs: %#v\n", multiarchMapping)
+
+	// If no container images are known, then assume they can run on
+	// any node and do not apply a nodeSelector patch.
+	if len(multiarchMapping) == 0 {
+		fmt.Println("no known images, so no nodeSelector patch applied")
+		return nil
+	}
+
 	patch := pod.patchFromSingleArchRestriction("amd64")
 	if patch != nil {
 		patchStr, err := json.Marshal(patch)
@@ -57,6 +68,7 @@ func (pod *PodInspectImpl) ApplyPatchToAdmissionResponse(resp *admission.Admissi
 			return err
 		}
 		resp.Patch = patchStr
+		pod.patchApplied = patch
 	}
 	fmt.Printf("patch: %#v\n", patch)
 	return nil

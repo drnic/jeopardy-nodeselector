@@ -39,7 +39,7 @@ func newAdmissionResponse() *admission.AdmissionResponse {
 		Patch:     []byte("[]"),
 	}
 }
-func TestDoNotMutateIfNodeSelectorSet(t *testing.T) {
+func TestExistingNodeSelectorNoPatch(t *testing.T) {
 	pod := PodInspectImpl{
 		podSpec: &core.PodSpec{
 			NodeSelector: map[string]string{"some-label": "is-set"},
@@ -47,11 +47,11 @@ func TestDoNotMutateIfNodeSelectorSet(t *testing.T) {
 	}
 	resp := newAdmissionResponse()
 	err := pod.ApplyPatchToAdmissionResponse(resp)
-	assert.NoError(t, err, "no error expected")
+	assert.NoError(t, err, "no error expected when applying patch")
 	assert.Equal(t, []byte("[]"), resp.Patch, "expect no patch applied")
 }
 
-func TestUnknownImage(t *testing.T) {
+func TestUnknownImageNoPatch(t *testing.T) {
 	podSpec := core.PodSpec{
 		Containers: []core.Container{
 			core.Container{Image: "unknown-foobar"},
@@ -62,9 +62,15 @@ func TestUnknownImage(t *testing.T) {
 	architectures, err := pod.containerImagesArchitectures()
 	assert.NoError(t, err, "unknown image should not result in error")
 	assert.Equal(t, 0, len(architectures), "unknown image should be ignored")
+
+	resp := newAdmissionResponse()
+	err = pod.ApplyPatchToAdmissionResponse(resp)
+	assert.NoError(t, err, "no error expected when applying patch")
+	assert.Equal(t, []byte("[]"), resp.Patch, "expect no patch applied")
+	assert.Nil(t, pod.patchApplied, "expected no patch applied")
 }
 
-func TestNoManifestImageDefault(t *testing.T) {
+func TestNoManifestImageDefaultToAMD64Only(t *testing.T) {
 	podSpec := core.PodSpec{
 		Containers: []core.Container{
 			core.Container{Image: "bitnami/nginx:latest"},
@@ -76,6 +82,12 @@ func TestNoManifestImageDefault(t *testing.T) {
 	assert.NoError(t, err, "should not result in error")
 	expected := map[string][]string{"bitnami/nginx:latest": nil}
 	assert.Equal(t, expected, architectures, "image is published without a manifest")
+
+	resp := newAdmissionResponse()
+	err = pod.ApplyPatchToAdmissionResponse(resp)
+	assert.NoError(t, err, "no error expected when applying patch")
+	assert.NotEqual(t, []byte("[]"), resp.Patch, "expect some patch to be applied")
+	assert.Equal(t, expectedPatch("amd64"), pod.patchApplied, "expected patch mismatch")
 }
 
 func TestManyContainersImageManifestSomeArchitectures(t *testing.T) {
@@ -106,4 +118,16 @@ func TestManyContainersImageManifestSomeArchitectures(t *testing.T) {
 		"nginx3": []string{"amd64", "arm64"},
 	}
 	assert.Equal(t, expected, architectures, "image is published with a manifest")
+}
+
+func expectedPatch(arch string) *[]nodeSelectorPodPatch {
+	return &[]nodeSelectorPodPatch{
+		nodeSelectorPodPatch{
+			Op:   "replace",
+			Path: "/spec/template/spec/nodeSelector",
+			Value: map[string]string{
+				"kubernetes.io/arch": "amd64",
+			},
+		},
+	}
 }
