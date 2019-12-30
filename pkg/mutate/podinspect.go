@@ -38,6 +38,13 @@ func NewFromPodSpec(podSpec *core.PodSpec, relativePatchPath string) *PodInspect
 
 // ApplyPatchToAdmissionResponse applies a patch to
 func (pod *PodInspectImpl) ApplyPatchToAdmissionResponse(resp *admission.AdmissionResponse) error {
+	// Do not try to mutate podSpec if NodeSelector already set
+	// In future, might want to only check if PodSpec already mutated by webhook,
+	// so as to allow additional unrelated NodeSelector filters.
+	if pod.podSpec.NodeSelector != nil || len(pod.podSpec.NodeSelector) != 0 {
+		return nil
+	}
+
 	multiarchMapping, err := pod.containerImagesArchitectures()
 	if err != nil {
 		return err

@@ -4,7 +4,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	admission "k8s.io/api/admission/v1beta1"
 	core "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // FakeSingleImageQuery supports fake response for simple image query
@@ -26,6 +28,27 @@ func (queries FakeManyImagesQuery) LookupImageArchitectures(image string) (archi
 		return query.LookupImageArchitectures(image)
 	}
 	return nil, false, nil
+}
+
+func newAdmissionResponse() *admission.AdmissionResponse {
+	pT := admission.PatchTypeJSONPatch
+	return &admission.AdmissionResponse{
+		Allowed:   true,
+		Result:    &metav1.Status{},
+		PatchType: &pT,
+		Patch:     []byte("[]"),
+	}
+}
+func TestDoNotMutateIfNodeSelectorSet(t *testing.T) {
+	pod := PodInspectImpl{
+		podSpec: &core.PodSpec{
+			NodeSelector: map[string]string{"some-label": "is-set"},
+		},
+	}
+	resp := newAdmissionResponse()
+	err := pod.ApplyPatchToAdmissionResponse(resp)
+	assert.NoError(t, err, "no error expected")
+	assert.Equal(t, []byte("[]"), resp.Patch, "expect no patch applied")
 }
 
 func TestUnknownImage(t *testing.T) {
