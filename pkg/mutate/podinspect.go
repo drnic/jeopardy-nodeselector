@@ -12,6 +12,7 @@ import (
 type PodInspectImpl struct {
 	podSpec           *core.PodSpec
 	relativePatchPath string
+	imageQuery        mquery.ImageQuery
 }
 
 type PodInpsect interface {
@@ -23,6 +24,7 @@ func NewFromPodSpec(podSpec *core.PodSpec, relativePatchPath string) *PodInspect
 	podImpl := &PodInspectImpl{
 		podSpec:           podSpec,
 		relativePatchPath: relativePatchPath,
+		imageQuery:        &mquery.ImageQueryImpl{},
 	}
 	return podImpl
 }
@@ -90,7 +92,7 @@ func (pod *PodInspectImpl) containerImages() (images []string) {
 func (pod *PodInspectImpl) containerImagesArchitectures() (mapping map[string][]string, err error) {
 	mapping = map[string][]string{}
 	for _, image := range pod.containerImages() {
-		architectures, found, err := mquery.LookupImageArchitectures(image)
+		architectures, found, err := pod.imageQuery.LookupImageArchitectures(image)
 		if err != nil {
 			return mapping, err
 		}
