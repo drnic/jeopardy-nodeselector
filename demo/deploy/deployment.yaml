@@ -18,7 +18,7 @@ spec:
       serviceAccount: jeopardy-nodeselector
       containers:
         - name: server
-          image: drnic/jeopardy-nodeselector:latest
+          image: drnic/jeopardy-nodeselector:v0.1.0
           command: ["/usr/bin/jeopardy-nodeselector"]
           args:
             [
@@ -30,7 +30,7 @@ spec:
           env:
             - name: HOSTNAME
               value: "jeopardy-nodeselector.default.svc.cluster.local"
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8443
               name: server-tls-port
