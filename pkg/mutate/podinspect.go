@@ -43,7 +43,7 @@ func NewFromPodSpec(clientset *kubernetes.Clientset, podSpec *core.PodSpec, rela
 		podSpec:           podSpec,
 		relativePatchPath: relativePatchPath,
 		imageQuery:        mquery.ImageQueryImpl{},
-		nodeArchQuery:     &NodeArchQueryImpl{},
+		nodeArchQuery:     &NodeArchQueryImpl{Clientset: clientset},
 	}
 	return podImpl
 }
@@ -178,7 +178,7 @@ func (pod *PodInspectImpl) commonImageArchitectures(nodeArchs []string) (someIma
 		}
 	}
 	if !someImagesKnown {
-		fmt.Printf("end: no images are known to backend API")
+		fmt.Println("end: no images are known to backend API")
 		return false, []string{}
 	}
 

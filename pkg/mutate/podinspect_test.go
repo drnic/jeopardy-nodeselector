@@ -88,7 +88,7 @@ func TestNoManifestImageDefaultToAMD64Only(t *testing.T) {
 	}
 	pod := NewFromPodSpec(nil, &podSpec, "/spec/template")
 	pod.imageQuery = FakeSingleImageQuery{nil, true, nil}
-	pod.nodeArchQuery = FakeNodeArchQuery{[]string{"armv7", "amd64"}, nil}
+	pod.nodeArchQuery = FakeNodeArchQuery{[]string{"arm", "amd64"}, nil}
 	err := pod.discoverContainerImagesArchitectures()
 	assert.NoError(t, err, "should not result in error")
 	expected := map[string][]string{"bitnami/nginx:latest": nil}
@@ -106,7 +106,7 @@ func TestManyArchitecturesButSingleCommonArch(t *testing.T) {
 		Containers: []core.Container{
 			core.Container{Image: "nginx"},
 			core.Container{Image: "nginx"},
-			core.Container{Image: "nginx-armv7"},
+			core.Container{Image: "nginx-arm"},
 			core.Container{Image: "nginx-many"},
 		},
 		InitContainers: []core.Container{
@@ -116,18 +116,18 @@ func TestManyArchitecturesButSingleCommonArch(t *testing.T) {
 	}
 	pod := NewFromPodSpec(nil, &podSpec, "/spec/template")
 	pod.imageQuery = FakeManyImagesQuery{
-		"nginx":       FakeSingleImageQuery{[]string{"amd64", "armv7"}, true, nil},
-		"nginx-armv7": FakeSingleImageQuery{[]string{"armv7"}, true, nil},
-		"nginx-many":  FakeSingleImageQuery{[]string{"amd64", "arm64", "armv7"}, true, nil},
-		"nginx4":      FakeSingleImageQuery{[]string{"ignored"}, true, nil},
+		"nginx":      FakeSingleImageQuery{[]string{"amd64", "arm"}, true, nil},
+		"nginx-arm":  FakeSingleImageQuery{[]string{"arm"}, true, nil},
+		"nginx-many": FakeSingleImageQuery{[]string{"amd64", "arm64", "arm"}, true, nil},
+		"nginx4":     FakeSingleImageQuery{[]string{"ignored"}, true, nil},
 	}
-	pod.nodeArchQuery = FakeNodeArchQuery{[]string{"armv7", "arm64", "amd64"}, nil}
+	pod.nodeArchQuery = FakeNodeArchQuery{[]string{"arm", "arm64", "amd64"}, nil}
 	err := pod.discoverContainerImagesArchitectures()
 	assert.NoError(t, err, "should not result in error")
 	expected := map[string][]string{
-		"nginx":       []string{"amd64", "armv7"},
-		"nginx-armv7": []string{"armv7"},
-		"nginx-many":  []string{"amd64", "arm64", "armv7"},
+		"nginx":      []string{"amd64", "arm"},
+		"nginx-arm":  []string{"arm"},
+		"nginx-many": []string{"amd64", "arm64", "arm"},
 	}
 	assert.Equal(t, expected, *pod.containerImagesArchitectures, "image is published with a manifest")
 
@@ -135,7 +135,7 @@ func TestManyArchitecturesButSingleCommonArch(t *testing.T) {
 	err = pod.ApplyPatchToAdmissionResponse(resp)
 	assert.NoError(t, err, "no error expected when applying patch")
 	assert.NotEqual(t, []byte("[]"), resp.Patch, "expect some patch to be applied")
-	assert.Equal(t, expectedPatch("armv7"), pod.patchApplied, "expected patch mismatch")
+	assert.Equal(t, expectedPatch("arm"), pod.patchApplied, "expected patch mismatch")
 }
 
 func expectedPatch(arch string) *[]nodeSelectorPodPatch {

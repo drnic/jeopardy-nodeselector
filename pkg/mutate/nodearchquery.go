@@ -27,9 +27,6 @@ func (nodes *NodeArchQueryImpl) NodeArchs() (archs []string, err error) {
 
 	for _, node := range nodeList.Items {
 		if arch, ok := node.Labels["kubernetes.io/arch"]; ok {
-			if arch == "arm" {
-				arch = "armv7"
-			}
 			archs = append(archs, arch)
 		}
 	}
