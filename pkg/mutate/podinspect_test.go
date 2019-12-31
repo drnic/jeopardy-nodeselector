@@ -30,6 +30,15 @@ func (queries FakeManyImagesQuery) LookupImageArchitectures(image string) (archi
 	return nil, false, nil
 }
 
+type FakeNodeArchQuery struct {
+	nodeArchs []string
+	err       error
+}
+
+func (query FakeNodeArchQuery) NodeArchs() (archs []string, err error) {
+	return query.nodeArchs, query.err
+}
+
 func newAdmissionResponse() *admission.AdmissionResponse {
 	pT := admission.PatchTypeJSONPatch
 	return &admission.AdmissionResponse{
@@ -57,8 +66,9 @@ func TestUnknownImageNoPatch(t *testing.T) {
 			core.Container{Image: "unknown-foobar"},
 		},
 	}
-	pod := NewFromPodSpec(&podSpec, "/spec/template")
+	pod := NewFromPodSpec(nil, &podSpec, "/spec/template")
 	pod.imageQuery = FakeSingleImageQuery{nil, false, nil}
+	pod.nodeArchQuery = FakeNodeArchQuery{[]string{"amd64"}, nil}
 	err := pod.discoverContainerImagesArchitectures()
 	assert.NoError(t, err, "unknown image should not result in error")
 	assert.Equal(t, 0, len(*pod.containerImagesArchitectures), "unknown image should be ignored")
@@ -76,8 +86,9 @@ func TestNoManifestImageDefaultToAMD64Only(t *testing.T) {
 			core.Container{Image: "bitnami/nginx:latest"},
 		},
 	}
-	pod := NewFromPodSpec(&podSpec, "/spec/template")
+	pod := NewFromPodSpec(nil, &podSpec, "/spec/template")
 	pod.imageQuery = FakeSingleImageQuery{nil, true, nil}
+	pod.nodeArchQuery = FakeNodeArchQuery{[]string{"armv7", "amd64"}, nil}
 	err := pod.discoverContainerImagesArchitectures()
 	assert.NoError(t, err, "should not result in error")
 	expected := map[string][]string{"bitnami/nginx:latest": nil}
@@ -103,13 +114,14 @@ func TestManyArchitecturesButSingleCommonArch(t *testing.T) {
 			core.Container{Image: "something-unknown"},
 		},
 	}
-	pod := NewFromPodSpec(&podSpec, "/spec/template")
+	pod := NewFromPodSpec(nil, &podSpec, "/spec/template")
 	pod.imageQuery = FakeManyImagesQuery{
 		"nginx":       FakeSingleImageQuery{[]string{"amd64", "armv7"}, true, nil},
 		"nginx-armv7": FakeSingleImageQuery{[]string{"armv7"}, true, nil},
 		"nginx-many":  FakeSingleImageQuery{[]string{"amd64", "arm64", "armv7"}, true, nil},
 		"nginx4":      FakeSingleImageQuery{[]string{"ignored"}, true, nil},
 	}
+	pod.nodeArchQuery = FakeNodeArchQuery{[]string{"armv7", "arm64", "amd64"}, nil}
 	err := pod.discoverContainerImagesArchitectures()
 	assert.NoError(t, err, "should not result in error")
 	expected := map[string][]string{

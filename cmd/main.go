@@ -8,6 +8,7 @@ import (
 	stdlog "log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -16,7 +17,8 @@ import (
 
 	admissioncontrol "github.com/elithrar/admission-control"
 
-	mutate "github.com/starkandwayne/jeopardy-nodeselector/pkg/mutate"
+	"github.com/starkandwayne/jeopardy-nodeselector/pkg/kube"
+	"github.com/starkandwayne/jeopardy-nodeselector/pkg/mutate"
 )
 
 type conf struct {
@@ -37,6 +39,13 @@ func main() {
 	flag.BoolVar(&conf.HTTPOnly, "http-only", false, "Only listen on unencrypted HTTP (e.g. for proxied environments)")
 	flag.StringVar(&conf.Port, "port", "8443", "The port to listen on (HTTPS).")
 	flag.StringVar(&conf.Host, "host", "jeopardy-nodeselector.default.svc", "The hostname for the service")
+
+	var kubeconfig *string
+	if home := homeDir(); home != "" {
+		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+	} else {
+		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+	}
 	flag.Parse()
 
 	// Set up logging
@@ -59,6 +68,17 @@ func main() {
 		}
 	}
 
+	clientset, err := kube.BuildKubernetesClientset(*kubeconfig)
+	if err != nil {
+		fatal(logger, err)
+	}
+	nodeArchQuery := mutate.NodeArchQueryImpl{Clientset: clientset}
+	initialNodeArchs, err := nodeArchQuery.NodeArchs()
+	if err != nil {
+		fatal(logger, err)
+	}
+	logger.Log("initial node archs", fmt.Sprintf("%v", initialNodeArchs))
+
 	// Set up the routes & logging middleware.
 	r := mux.NewRouter().StrictSlash(true)
 	// Show all available routes
@@ -70,6 +90,7 @@ func main() {
 	admissions := r.PathPrefix("/jeopardy-nodeselector").Subrouter()
 	admissions.Handle("/multiarch", &admissioncontrol.AdmissionHandler{
 		AdmitFunc: mutate.NodeSelectorMultiArch(
+			clientset,
 			[]string{"white", "list", "namespaces"},
 		),
 		Logger: logger,
@@ -147,4 +168,11 @@ func printAvailableRoutes(router *mux.Router, logger log.Logger, msg string) htt
 	}
 
 	return http.HandlerFunc(fn)
+}
+
+func homeDir() string {
+	if h := os.Getenv("HOME"); h != "" {
+		return h
+	}
+	return os.Getenv("USERPROFILE") // windows
 }

@@ -12,13 +12,14 @@ import (
 	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
 // NodeSelectorMultiArch constructs an AdmitFunc to perform this project's primary functions
-func NodeSelectorMultiArch(ignoredNamespaces []string) admissioncontrol.AdmitFunc {
+func NodeSelectorMultiArch(clientset *kubernetes.Clientset, ignoredNamespaces []string) admissioncontrol.AdmitFunc {
 	return func(admissionReview *admission.AdmissionReview) (*admission.AdmissionResponse, error) {
 		kind := admissionReview.Request.Kind.Kind
 		pT := admission.PatchTypeJSONPatch
@@ -94,7 +95,7 @@ func NodeSelectorMultiArch(ignoredNamespaces []string) admissioncontrol.AdmitFun
 		fmt.Printf("namespace: %s, annotations: %v\n", namespace, annotations)
 		fmt.Printf("kind: %s, podSpec: %#v\n", kind, podSpec)
 
-		podInspect := NewFromPodSpec(podSpec, relativePatchPath)
+		podInspect := NewFromPodSpec(clientset, podSpec, relativePatchPath)
 		fmt.Printf("podInspect: %#v\n", podInspect)
 
 		podInspect.ApplyPatchToAdmissionResponse(resp)

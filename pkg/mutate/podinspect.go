@@ -8,6 +8,7 @@ import (
 	"github.com/starkandwayne/jeopardy-nodeselector/pkg/mquery"
 	admission "k8s.io/api/admission/v1beta1"
 	core "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 const defaultNodeArch = "amd64"
@@ -24,6 +25,7 @@ type PodInpsect interface {
 // to ensure the Pod is allocated to a subset of Nodes that are capable of
 // running the Pod's Containers' images.
 type PodInspectImpl struct {
+	clientset         *kubernetes.Clientset
 	podSpec           *core.PodSpec
 	relativePatchPath string
 
@@ -35,8 +37,9 @@ type PodInspectImpl struct {
 }
 
 // NewFromPodSpec consumes either a Pod or PodSpec
-func NewFromPodSpec(podSpec *core.PodSpec, relativePatchPath string) *PodInspectImpl {
+func NewFromPodSpec(clientset *kubernetes.Clientset, podSpec *core.PodSpec, relativePatchPath string) *PodInspectImpl {
 	podImpl := &PodInspectImpl{
+		clientset:         clientset,
 		podSpec:           podSpec,
 		relativePatchPath: relativePatchPath,
 		imageQuery:        mquery.ImageQueryImpl{},
@@ -182,14 +185,7 @@ func (pod *PodInspectImpl) commonImageArchitectures(nodeArchs []string) (someIma
 	for _, imageArchs := range *pod.containerImagesArchitectures {
 		fmt.Printf("commonArchs: %#v, imageArchs: %#v\n", commonArchs, imageArchs)
 		// Using https://github.com/adam-hanna/arrayOperations#intersect
-		z, ok := arrayOp.Intersect(commonArchs, imageArchs)
-		if !ok {
-			return someImagesKnown, []string{}
-		}
-		commonArchs, ok = z.Interface().([]string)
-		if !ok {
-			return someImagesKnown, []string{}
-		}
+		commonArchs = arrayOp.IntersectString(commonArchs, imageArchs)
 	}
 	fmt.Printf("end: commonArchs: %#v\n", commonArchs)
 	return
