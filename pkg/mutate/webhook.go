@@ -92,12 +92,9 @@ func NodeSelectorMultiArch(clientset *kubernetes.Clientset, ignoredNamespaces []
 			return nil, xerrors.Errorf("the submitted Kind is not supported by this admission handler: %s", kind)
 		}
 
-		fmt.Printf("namespace: %s, annotations: %v\n", namespace, annotations)
-		fmt.Printf("kind: %s, podSpec: %#v\n", kind, podSpec)
+		fmt.Printf("kind: %s, namespace: %s, annotations: %v\n", kind, namespace, annotations)
 
 		podInspect := NewFromPodSpec(clientset, podSpec, relativePatchPath)
-		fmt.Printf("podInspect: %#v\n", podInspect)
-
 		podInspect.ApplyPatchToAdmissionResponse(resp)
 
 		return resp, nil
