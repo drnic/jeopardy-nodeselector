@@ -19,6 +19,7 @@ type mQueryResponse struct {
 
 type mQueryResponsePayload struct {
 	ID           string   `json:"_id"`
+	Platform     string   `json:"Platform"`
 	ArchList     []string `json:"archList"`
 	Cachetime    int64    `json:"cachetime"`
 	ManifestList string   `json:"manifestList"`

@@ -19,7 +19,14 @@ func (query ImageQueryImpl) LookupImageArchitectures(image string) (architecture
 	if err != nil || !found {
 		return []string{}, found, err
 	}
-	return query.normalizeArchList(resp.Payload.ArchList), found, nil
+	// Assume image provides a manifest documenting its platform architectures
+	archList := resp.Payload.ArchList
+	if len(archList) == 0 {
+		// If not, then .Platform contains its only implemented architecture
+		// Annoyingly, it is a different string syntax "amd64/linux", rather than "linux/amd64" :/
+		archList = []string{resp.Payload.Platform}
+	}
+	return query.normalizeArchList(archList), found, nil
 }
 
 // normalizeArchList converts results from backend API into nodeSelector values
@@ -27,15 +34,19 @@ func (query ImageQueryImpl) LookupImageArchitectures(image string) (architecture
 // []string{"linux/amd64", "linux/arm/v7", "linux/arm64", "linux/386", "linux/ppc64le", "linux/s390x"}
 // Will become:
 // []string{"amd64", "arm", "arm64", "386", "ppc64le", "s390x"}
+// Or, if using .Platform value:
+// []string{"amd64/linux"}
+// Will become:
+// []string{"amd64"}
 func (query ImageQueryImpl) normalizeArchList(received []string) (internal []string) {
 	for _, recvImage := range received {
 		var image string
 		switch recvImage {
-		case "linux/amd64":
+		case "linux/amd64", "amd64/linux":
 			image = "amd64"
-		case "linux/arm/v7":
+		case "linux/arm/v7", "arm/linux":
 			image = "arm"
-		case "linux/arm64":
+		case "linux/arm64", "arm64/linux":
 			image = "arm64"
 		// TODO: I'm unsure what the correct values are for the following:
 		case "linux/ppc64le":

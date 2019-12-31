@@ -11,8 +11,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-const defaultNodeArch = "amd64"
-
 // PodInpsect describes interface for modifying an admission controller response
 // Implemented by PodInspectImpl
 // TODO: PodInpsect is not currently used by any fake implementations
@@ -75,18 +73,15 @@ func (pod *PodInspectImpl) ApplyPatchToAdmissionResponse(resp *admission.Admissi
 		return err
 	}
 
-	someImagesHaveManifest, commonArchs := pod.commonImageArchitectures(nodeArchs)
-	patch := pod.patchFromSingleArchRestriction(defaultNodeArch)
-	if !someImagesHaveManifest {
-		fmt.Printf("no images specify multiarch manifest, so defaulting nodeSelector to %v\n", defaultNodeArch)
-	} else if len(commonArchs) == 0 {
+	commonArchs := pod.commonImageArchitectures(nodeArchs)
+	if len(commonArchs) == 0 {
 		return fmt.Errorf("No commonly supported platform architecture between pod images: %v", pod.containerImages())
-	} else {
-		// For now, just pick the first item from list of common required archs
-		// TODO: we need new node labels to allow more flexible allocation of pods to 2+ architectures if images support them
-		// TODO: must pick an arch that is supported by actual nodes
-		patch = pod.patchFromSingleArchRestriction(commonArchs[0])
 	}
+	// For now, just pick the first item from list of common required archs
+	// TODO: we need new node labels to allow more flexible allocation of pods to 2+ architectures if images support them
+	// TODO: must pick an arch that is supported by actual nodes
+	patch := pod.patchFromSingleArchRestriction(commonArchs[0])
+
 	if patch != nil {
 		patchStr, err := json.Marshal(patch)
 		if err != nil {
@@ -165,22 +160,8 @@ func (pod *PodInspectImpl) discoverContainerImagesArchitectures() error {
 
 // commonImageArchitectures finds the intersection of platform architectures
 // provided by the list of images being used by a PodSpec.
-// If all images are unknown, then commonArchs = [], and someImagesKnown = false
-// If some images are known, but no common architectures then commonArchs = [], but someImagesKnown = true
-// TODO: must pick an arch that is supported by actual nodes; start intersection loop with node arch list
-func (pod *PodInspectImpl) commonImageArchitectures(nodeArchs []string) (someImagesKnown bool, commonArchs []string) {
+func (pod *PodInspectImpl) commonImageArchitectures(nodeArchs []string) (commonArchs []string) {
 	commonArchs = nodeArchs
-
-	for _, imageArchs := range *pod.containerImagesArchitectures {
-		fmt.Printf("commonArchs: %#v, imageArchs: %#v\n", commonArchs, imageArchs)
-		if imageArchs != nil || len(imageArchs) > 0 {
-			someImagesKnown = true
-		}
-	}
-	if !someImagesKnown {
-		fmt.Println("end: no images are known to backend API")
-		return false, []string{}
-	}
 
 	for _, imageArchs := range *pod.containerImagesArchitectures {
 		fmt.Printf("commonArchs: %#v, imageArchs: %#v\n", commonArchs, imageArchs)
