@@ -139,6 +139,21 @@ func TestManyArchitecturesButSingleCommonArch(t *testing.T) {
 	assert.Equal(t, expectedPatch("arm"), pod.patchApplied, "expected patch mismatch")
 }
 
+func TestUnsupportedArch(t *testing.T) {
+	podSpec := core.PodSpec{
+		Containers: []core.Container{
+			core.Container{Image: "bitnami/nginx:latest"},
+		},
+	}
+	pod := NewFromPodSpec(nil, &podSpec, "/spec/template")
+	pod.imageQuery = FakeSingleImageQuery{[]string{"amd64"}, true, nil}
+	pod.nodeArchQuery = FakeNodeArchQuery{[]string{"arm"}, nil}
+
+	resp := newAdmissionResponse()
+	err := pod.ApplyPatchToAdmissionResponse(resp)
+	assert.Error(t, err, "expect an error since image arch not supported by nodes")
+}
+
 func expectedPatch(arch string) *[]nodeSelectorPodPatch {
 	return &[]nodeSelectorPodPatch{
 		nodeSelectorPodPatch{
