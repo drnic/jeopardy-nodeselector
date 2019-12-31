@@ -80,8 +80,8 @@ func NodeSelectorMultiArch(clientset *kubernetes.Clientset, ignoredNamespaces []
 		fmt.Printf("kind: %s\n", kind)
 
 		podInspect := NewFromPodSpec(clientset, podSpec, relativePatchPath)
-		podInspect.ApplyPatchToAdmissionResponse(resp)
+		err := podInspect.ApplyPatchToAdmissionResponse(resp)
 
-		return resp, nil
+		return resp, err
 	}
 }
