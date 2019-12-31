@@ -26,6 +26,7 @@ spec:
       labels:
         app: jeopardy-nodeselector
     spec:
+      serviceAccount: jeopardy-nodeselector
       containers:
         - name: server
           image: drnic/jeopardy-nodeselector:latest
@@ -129,3 +130,35 @@ webhooks:
         namespace: default
         path: "/jeopardy-nodeselector/multiarch"
       caBundle: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURyVENDQXBXZ0F3SUJBZ0lSQUxyczlPVXp5UWVrby9aQWNNaGw0S0V3RFFZSktvWklodmNOQVFFTEJRQXcKUXpFVk1CTUdBMVVFQ2hNTVkyVnlkQzF0WVc1aFoyVnlNU293S0FZRFZRUURFeUZxWlc5d1lYSmtlUzF1YjJSbApjMlZzWldOMGIzSXVaR1ZtWVhWc2RDNXpkbU13SGhjTk1Ua3hNakkyTWpNeE9ERTBXaGNOTWpBd016STFNak14Ck9ERTBXakJETVJVd0V3WURWUVFLRXd4alpYSjBMVzFoYm1GblpYSXhLakFvQmdOVkJBTVRJV3BsYjNCaGNtUjUKTFc1dlpHVnpaV3hsWTNSdmNpNWtaV1poZFd4MExuTjJZekNDQVNJd0RRWUpLb1pJaHZjTkFRRUJCUUFEZ2dFUApBRENDQVFvQ2dnRUJBSzQxVEdlVHNpc2lwZUN0bDN2bHNkTUxMTElML3dmd3AyNEMyWUlsck1BQWdJdDNDSjdxCnZNOXpSL3cxVk1VaUhkdkNmT1ZuUVhveXk2Y2lDSHBHanZ3djZBRGdCWW9WRlhDZ1NyVnNLZUdNZG9GWk03bjMKMEJGVkQzSG1SUHJMMTNlU1ljMjVYL3F1MEVRR1plOHVXUkVjT2VKRzFZa3lTM0lQeC9VcU4wdFM5NDVWaVUzRQo1TVZmTkxEcmM2Vko3VE1iYnZDNU90S25DcVNidFhTT1pBUURnUkxFN240RnJiS3ErczVWd09uTzFha1RCOXlECjdTcHY2RmZWOTlaU1JkRTFLSk1yRzRVT0c0QVBGVXU3b2xGTUtWbVNtZ2dReWNIVkJSdTVBNWdkSzNvSUQ5MWcKTkpReXIvQ3dJb2JVeCtxczM3ZHVLT0M5M3ZSWjh6RUtRdzhDQXdFQUFhT0JtekNCbURBVEJnTlZIU1VFRERBSwpCZ2dyQmdFRkJRY0RBVEFNQmdOVkhSTUJBZjhFQWpBQU1ITUdBMVVkRVFSc01HcUNJV3BsYjNCaGNtUjVMVzV2ClpHVnpaV3hsWTNSdmNpNWtaV1poZFd4MExuTjJZNEl2YW1WdmNHRnlaSGt0Ym05a1pYTmxiR1ZqZEc5eUxtUmwKWm1GMWJIUXVjM1pqTG1Oc2RYTjBaWEl1Ykc5allXeUNDV3h2WTJGc2FHOXpkSUlKTVRJM0xqQXVNQzR4TUEwRwpDU3FHU0liM0RRRUJDd1VBQTRJQkFRQkpzcG81M3Ewam1meW0rMTlvMC9jSFphS2dGdXgyQXg2QWNramZKbFYwCi9ZMHR2VXRHVGhrRFl6QjRPSExkL2xWREZhQWNqQkpWT24wcllKVUNTODhEUmFuWmtIYXVuMWwyZm5LZjRlZ1cKZjY4ampSZWdNYndabUt4K3hta1pxSGI0NDR2VHpyUFFpSXArU3BRdDRra1dVaVFUOENBNkkxRCt6VEpqSjFBSApBbkZkY0Z5eFoyQnFMamdNSVl2a0dDK2VFaU81bW5KcVJJeVFTNzVkcGJ4bkY0UU1obTF1OFpoQmR1dndaOG1hCnlNcU1abm9SNnlpL09MMDQ3bVJkWWRITUZNK0lZQnFmVm14TkRJMU1KeE9TOUxRTmt4cEZOQm41OU9Lb3NHMCsKQ1JjbFQ1ak9sOFN0R1h5QWRwZmxidWpxYUNuVlFJZ1FIZVhBaVI4K05XTXEKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo="
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: jeopardy-nodeselector
+  namespace: default
+  labels:
+    app: jeopardy-nodeselector
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: jeopardy-nodeselector
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: jeopardy-nodeselector
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: jeopardy-nodeselector
+subjects:
+- kind: ServiceAccount
+  name: jeopardy-nodeselector
+  namespace: default

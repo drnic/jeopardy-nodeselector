@@ -54,6 +54,9 @@ secret=jeopardy-nodeselector-demo-build
   echo "+ deploy/deployment.yaml"
   cp src/deployment.yaml deploy/
 
+  echo "+ deploy/serviceaccount.yaml"
+  cp src/serviceaccount.yaml deploy/
+
   echo "+ deploy/cert-secret.yaml"
   cat > deploy/cert-secret.yaml <<YAML
 apiVersion: v1

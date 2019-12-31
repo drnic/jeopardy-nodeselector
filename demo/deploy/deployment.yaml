@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: jeopardy-nodeselector
+  namespace: default
   labels:
     app: jeopardy-nodeselector
 spec:
@@ -14,6 +15,7 @@ spec:
       labels:
         app: jeopardy-nodeselector
     spec:
+      serviceAccount: jeopardy-nodeselector
       containers:
         - name: server
           image: drnic/jeopardy-nodeselector:latest

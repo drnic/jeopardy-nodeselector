@@ -75,7 +75,7 @@ To build the OCI (docker image) for multiple architectures:
 
 ```plain
 docker buildx build --progress=plain \
-  --platform linux/amd64,linux/arm/v7,linux/arm64 \
+  --platform linux/amd64,linux/arm/v7 \
   --push \
   --tag docker.io/drnic/jeopardy-nodeselector \
   .
