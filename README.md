@@ -61,6 +61,26 @@ To clean up the webhook service, configuration, and the demo namespace:
 kubectl delete -f demo/demo.yaml
 ```
 
+## Helm Chart Installation
+
+### Requirements
+
+The Helm chart currently requires Cert Manager to create a self-signed certificate pair for the server, using a known self-signed CA (which is hard-coded into the webhook configuration as `caBundle`).
+
+### Steps
+
+```plain
+kubectl create ns jeopardy-nodeselector
+helm install jeopardy-nodeselector . -n jeopardy-nodeselector
+```
+
+### Uninstall
+
+```plain
+helm delete jeopardy-nodeselector
+kubectl delete secret jeopardy-nodeselector-certs
+```
+
 ## Local demo
 
 In one terminal, run the webhook server with some pre-created self-signed certificates:

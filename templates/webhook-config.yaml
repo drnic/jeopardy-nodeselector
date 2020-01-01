@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  # Create a namespace that we'll match on
+  name: multiarch-test
+  labels:
+    {{- include "jeopardy-nodeselector.labels" . | nindent 4 }}
+    multiarch: "true"
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: {{ include "jeopardy-nodeselector.fullname" . }}
+  labels:
+    {{- include "jeopardy-nodeselector.labels" . | nindent 4 }}
+  annotations:
+    cert-manager.io/inject-ca-from-secret: {{ .Release.Namespace }}/{{ include "jeopardy-nodeselector.fullname" . }}-certs
+webhooks:
+  - name: {{ include "jeopardy-nodeselector.fullname" . }}.{{ .Release.Namespace }}.webhooks.starkandwayne.com
+    namespaceSelector:
+      matchExpressions:
+        # Any Namespace with a label matching the below will have its
+        # annotations validated by this admission controller
+        - key: "multiarch"
+          operator: In
+          values: ["true"]
+    sideEffects: None
+    # "Equivalent" provides insurance against API version upgrades/changes - e.g.
+    # extensions/v1beta1 Ingress -> networking.k8s.io/v1beta1 Ingress
+    # matchPolicy: Equivalent
+    rules:
+      - apiGroups:
+          - "*"
+        apiVersions:
+          - "*"
+        operations:
+          - "CREATE"
+          - "UPDATE"
+        resources:
+          - "pods"
+          - "deployments"
+    failurePolicy: Fail
+    clientConfig:
+      service:
+        # This is the hostname our certificate needs in its Subject Alternative
+        # Name array - name.namespace.svc
+        # If the certificate does NOT have this name, TLS validation will fail.
+        name: {{ include "jeopardy-nodeselector.fullname" . }}
+        namespace: {{ .Release.Namespace }}
+        path: "/jeopardy-nodeselector/multiarch"

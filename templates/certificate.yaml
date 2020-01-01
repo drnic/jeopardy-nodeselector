@@ -1,0 +1,28 @@
+apiVersion: cert-manager.io/v1alpha2
+kind: Issuer
+metadata:
+  name: {{ include "jeopardy-nodeselector.fullname" . }}
+  labels:
+    {{- include "jeopardy-nodeselector.labels" . | nindent 4 }}
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: {{ include "jeopardy-nodeselector.fullname" . }}
+  labels:
+    {{- include "jeopardy-nodeselector.labels" . | nindent 4 }}
+spec:
+  commonName: {{ include "jeopardy-nodeselector.fullname" . }}.{{ .Release.Namespace }}.svc
+  secretName: {{ include "jeopardy-nodeselector.fullname" . }}-certs
+  issuerRef:
+    name: {{ include "jeopardy-nodeselector.fullname" . }}
+  usages:
+    - server auth
+  keySize: 2048
+  dnsNames:
+  - {{ include "jeopardy-nodeselector.fullname" . }}.{{ .Release.Namespace }}.svc
+  - {{ include "jeopardy-nodeselector.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+  - localhost
+  - 127.0.0.1
