@@ -43,6 +43,20 @@ Events:
   Normal  Pulling    5s         kubelet, my-amd64-node  Pulling image "bitnami/nginx"
 ```
 
+You can now deploy complex sets of things without worrying whether you need to determine nodeSelectors. For example, the Ghost helm chart uses images that only run on `amd64`. But you don't need to know this anymore:
+
+```plain
+helm install ghost stable/ghost \
+    -n multiarch-test \
+    --set "ghostHost=ghost.multiarch-test.svc.cluster.local"
+kubectl get pods -n multiarch-test -l release=ghost -owide
+NAME                     READY   STATUS    NODE
+ghost-mariadb-0          1/1     Running   lattepanda
+ghost-57f665d946-bh56s   1/1     Running   lattepanda
+```
+
+Both the `mariadb` and `ghost` pods are assigned to the `amd64` lattepanda node.
+
 To clean up the webhook service, configuration, and the demo namespace:
 
 ```plain
