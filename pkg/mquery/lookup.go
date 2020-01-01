@@ -44,7 +44,7 @@ func (query ImageQueryImpl) normalizeArchList(received []string) (internal []str
 		switch recvImage {
 		case "linux/amd64", "amd64/linux":
 			image = "amd64"
-		case "linux/arm/v7", "arm/linux":
+		case "linux/arm/v7", "linux/arm", "arm/linux":
 			image = "arm"
 		case "linux/arm64", "arm64/linux":
 			image = "arm64"
