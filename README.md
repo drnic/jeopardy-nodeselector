@@ -1,7 +1,5 @@
 # Jeopardy Node Selector
 
-**STATUS:** Still in initial development. The demo below does install; though currently it hard-codes all `nodeSelector` to `kubernetes.io/arch=amd64`. Will finish it soon.
-
 ```script
 "I'll take 'Random Docker images off the Internet' for $200"
 "binami/nginx"
@@ -88,16 +86,5 @@ Available routes:
 To build the OCI (docker image) for multiple architectures:
 
 ```plain
-docker buildx build --progress=plain \
-  --platform linux/amd64,linux/arm/v7 \
-  --push \
-  --tag docker.io/drnic/jeopardy-nodeselector \
-  .
-```
-
-For just a single architecture:
-
-```plain
-docker build -t drnic/jeopardy-nodeselector .
-docker push drnic/jeopardy-nodeselector
+make build push manifest
 ```
