@@ -38,6 +38,7 @@ func NodeSelectorMultiArch(clientset *kubernetes.Clientset, ignoredNamespaces []
 		// patch path is common for built-in resource definitions
 		// for everything except Pod
 		relativePatchPath := "/spec/template"
+		var name string
 
 		// Extract the necessary metadata from our known Kinds
 		switch kind {
@@ -47,6 +48,7 @@ func NodeSelectorMultiArch(clientset *kubernetes.Clientset, ignoredNamespaces []
 				return nil, err
 			}
 			podSpec = &pod.Spec
+			name = pod.GetName()
 			relativePatchPath = ""
 		case "Deployment":
 			deployment := apps.Deployment{}
@@ -54,30 +56,34 @@ func NodeSelectorMultiArch(clientset *kubernetes.Clientset, ignoredNamespaces []
 				return nil, err
 			}
 			podSpec = &deployment.Spec.Template.Spec
+			name = deployment.GetName()
 		case "StatefulSet":
 			statefulset := apps.StatefulSet{}
 			if _, _, err := deserializer.Decode(admissionReview.Request.Object.Raw, nil, &statefulset); err != nil {
 				return nil, err
 			}
 			podSpec = &statefulset.Spec.Template.Spec
+			name = statefulset.GetName()
 		case "DaemonSet":
 			daemonset := apps.DaemonSet{}
 			if _, _, err := deserializer.Decode(admissionReview.Request.Object.Raw, nil, &daemonset); err != nil {
 				return nil, err
 			}
 			podSpec = &daemonset.Spec.Template.Spec
+			name = daemonset.GetName()
 		case "Job":
 			job := batch.Job{}
 			if _, _, err := deserializer.Decode(admissionReview.Request.Object.Raw, nil, &job); err != nil {
 				return nil, err
 			}
 			podSpec = &job.Spec.Template.Spec
+			name = job.GetName()
 		default:
 			// TODO(drnic): except for whitelisted namespaces
 			return nil, xerrors.Errorf("the submitted Kind is not supported by this admission handler: %s", kind)
 		}
 
-		fmt.Printf("kind: %s\n", kind)
+		fmt.Printf("kind: %s, name: %s\n", kind, name)
 
 		podInspect := NewFromPodSpec(clientset, podSpec, relativePatchPath)
 		err := podInspect.ApplyPatchToAdmissionResponse(resp)
