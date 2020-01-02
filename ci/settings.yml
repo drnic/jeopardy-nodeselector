@@ -1,0 +1,30 @@
+---
+meta:
+  name:    jeopardy-nodeselector
+  target:  ohio-sw
+  url:     https://ci2.starkandwayne.com
+
+  initial_version: 0.2.0
+
+  github:
+    owner:  drnic
+    repo:   jeopardy-nodeselector
+    branch: master
+    private_key:  ((github-private-key))
+    access_token: ((github-access-token))
+
+  git:
+    email:  ((git-commit-email))
+    name:   ((git-commit-name))
+
+  dockerhub:
+    username: ((dockerhub-username))
+    email:    ((dockerhub-email))
+    password: ((dockerhub-password))
+    repository: (( concat meta.github.owner "/" meta.name ))
+
+  aws:
+    bucket:      (( grab meta.pipeline ))
+    region_name: us-east-2
+    access_key:  ((aws-access-key))
+    secret_key:  ((aws-secret-key))
