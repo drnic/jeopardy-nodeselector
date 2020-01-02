@@ -53,6 +53,11 @@ groups:
   - name: (( grab meta.name ))
     jobs:
       - build-latest
+  - name: versioning
+    jobs:
+      - major
+      - minor
+      - patch
 
 jobs:
   - name: build-latest
@@ -120,6 +125,27 @@ jobs:
           os: linux
           tag_file: tags/armhf
 
+  - name: minor
+    public: true
+    plan:
+    - do:
+      - { get: version, trigger: false, params: {bump: minor} }
+      - { put: version,                 params: {file: version/number} }
+
+  - name: patch
+    public: true
+    plan:
+    - do:
+      - { get: version, trigger: false, params: {bump: patch} }
+      - { put: version,                 params: {file: version/number} }
+
+  - name: major
+    public: true
+    plan:
+    - do:
+      - { get: version, trigger: false, params: {bump: major} }
+      - { put: version,                 params: {file: version/number} }
+
 resource_types:
 - name: docker-manifest
   type: docker-image
@@ -156,3 +182,14 @@ resources:
     source:
       .: (( inject meta.dockerhub ))
       tag: latest
+
+  - name: version
+    type: semver
+    source :
+      driver:            s3
+      bucket:            (( grab meta.aws.bucket ))
+      region_name:       (( grab meta.aws.region_name ))
+      key:               version
+      access_key_id:     (( grab meta.aws.access_key ))
+      secret_access_key: (( grab meta.aws.secret_key ))
+      initial_version:   (( grab meta.initial_version || "0.0.1" ))
