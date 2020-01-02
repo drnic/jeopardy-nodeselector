@@ -66,11 +66,13 @@ jobs:
         steps:
         - put: amd64
           params:
+            tag_as_latest: false
             build:      "git"
             cache:      true
             dockerfile: (( concat "git/" meta.docker.dockerfile ))
         - put: arm64
           params:
+            tag_as_latest: false
             build_args:
               GOARCH: "arm64"
             build:      "git"
@@ -78,6 +80,7 @@ jobs:
             dockerfile: (( concat "git/" meta.docker.dockerfile ))
         - put: armhf
           params:
+            tag_as_latest: false
             build_args:
               GOARCH: "arm"
               GOARM:  "7"
