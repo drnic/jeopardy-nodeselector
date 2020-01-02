@@ -13,10 +13,11 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
-# Mutating webhook client needs caBundle
-# Possibly try:
-#   kubectl get configmap -n kube-system extension-apiserver-authentication -o=jsonpath='{.data.client-ca-file}' | base64 | tr -d '\n'
-caBundle:
+certificate:
+  create: false
+  # FIXME: I temporarily added static certificates because I had issues with cert-manager
+  # https://github.com/jetstack/cert-manager/issues/2492
+  static: true
 
 serviceAccount:
   # Specifies whether a service account should be created

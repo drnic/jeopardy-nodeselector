@@ -15,6 +15,7 @@ metadata:
     {{- include "jeopardy-nodeselector.labels" . | nindent 4 }}
   annotations:
     cert-manager.io/inject-ca-from-secret: {{ .Release.Namespace }}/{{ include "jeopardy-nodeselector.fullname" . }}-certs
+    certmanager.k8s.io/inject-ca-from: {{ .Release.Namespace }}/{{ include "jeopardy-nodeselector.fullname" . }}-certs
 webhooks:
   - name: {{ include "jeopardy-nodeselector.fullname" . }}.{{ .Release.Namespace }}.webhooks.starkandwayne.com
     namespaceSelector:

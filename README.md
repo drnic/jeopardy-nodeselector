@@ -70,8 +70,7 @@ The Helm chart currently requires Cert Manager to create a self-signed certifica
 ### Steps
 
 ```plain
-kubectl create ns jeopardy-nodeselector
-helm install jeopardy-nodeselector . -n jeopardy-nodeselector
+helm install jeopardy-nodeselector . --set "certificate.static=true" -n default
 ```
 
 ### Uninstall
