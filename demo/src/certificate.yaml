@@ -22,5 +22,9 @@ spec:
   dnsNames:
   - jeopardy-nodeselector.default.svc
   - jeopardy-nodeselector.default.svc.cluster.local
+  - jeopardy-nodeselector.jeopardy-nodeselector.svc
+  - jeopardy-nodeselector.jeopardy-nodeselector.svc
+  - jeopardy-nodeselector.jeopardy-nodeselector-test.svc.cluster.local
+  - jeopardy-nodeselector.jeopardy-nodeselector-test.svc.cluster.local
   - localhost
   - 127.0.0.1
