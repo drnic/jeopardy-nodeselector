@@ -183,11 +183,11 @@ jobs:
         - name: version
         outputs:
         - name: pushme
-        - name: release
+        - name: gh
         params:
           REPO_ROOT: git-demo
           REPO_OUT:  pushme
-          RELEASE_ROOT: release
+          RELEASE_ROOT: gh
           RELEASE_NAME: (( grab meta.name ))
           VERSION_FROM: version/version
           GIT_EMAIL: (( grab meta.git.email ))
