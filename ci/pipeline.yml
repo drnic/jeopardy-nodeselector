@@ -171,7 +171,7 @@ jobs:
             sed -i'' "s%image: ${image}:.*$%image: ${image}:v${version}%" demo/demo.yaml
             sed -i'' "s%image: ${image}:.*$%image: ${image}:v${version}%" demo/src/deployment.yaml
             sed -i'' "s%image: ${image}:.*$%image: ${image}:v${version}%" demo/deploy/deployment.yaml
-            sed -i'' "s%tag: ${image}:.*$%tag: ${image}:v${version}%" values.yaml
+            sed -i'' "s%tag:.*$%tag: v${version}%" values.yaml
     - task: release
       config:
         .: (( inject meta.task_config ))
