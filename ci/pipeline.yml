@@ -300,8 +300,9 @@ resource_types:
 - name: docker-manifest
   type: docker-image
   source:
-    # repository: mbialon/concourse-docker-manifest-resource
-    repository: drnic/concourse-docker-manifest-resource
+    repository: mbialon/concourse-docker-manifest-resource
+    # repository: drnic/concourse-docker-manifest-resource
+
 resources:
   - name: git
     type: git
