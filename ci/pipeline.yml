@@ -184,17 +184,20 @@ jobs:
         - name: git
         - name: version
         outputs: [{name: git-demo}]
+        params:
+          image: (( grab meta.dockerhub.repository ))
         run:
           path: sh
           args:
           - -ce
           - |
+            : ${image:?required}
             version=$(cat version/version)
             git clone git git-demo
             cd git-demo
-            sed -i'' "s%image: drnic/jeopardy-nodeselector:.*$%image: drnic/jeopardy-nodeselector:v${version}%" demo/demo.yaml
-            sed -i'' "s%image: drnic/jeopardy-nodeselector:.*$%image: drnic/jeopardy-nodeselector:v${version}%" demo/src/deployment.yaml
-            sed -i'' "s%image: drnic/jeopardy-nodeselector:.*$%image: drnic/jeopardy-nodeselector:v${version}%" demo/deploy/deployment.yaml
+            sed -i'' "s%image: ${image}:.*$%image: ${image}:v${version}%" demo/demo.yaml
+            sed -i'' "s%image: ${image}:.*$%image: ${image}:v${version}%" demo/src/deployment.yaml
+            sed -i'' "s%image: ${image}:.*$%image: ${image}:v${version}%" demo/deploy/deployment.yaml
 
   - name: pre
     public: true
