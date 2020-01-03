@@ -85,15 +85,14 @@ jobs:
           params:
             tag_as_latest: false
             build_args:
-              GOARCH: "arm64"
+              OPTS: "GOARCH=arm64"
             build:      "git"
             dockerfile: (( concat "git/" meta.docker.dockerfile ))
         - put: armhf
           params:
             tag_as_latest: false
             build_args:
-              GOARCH: "arm"
-              GOARM:  "7"
+              OPTS: "GOARCH=arm GOARM=7"
             build:      "git"
             dockerfile: (( concat "git/" meta.docker.dockerfile ))
     - task: tag-files
