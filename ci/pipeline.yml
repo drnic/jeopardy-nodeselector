@@ -172,6 +172,29 @@ jobs:
         - arch: arm
           os: linux
           digest_file: armhf/digest
+    - task: update-demo
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: (( grab meta.image.name ))
+            tag:        (( grab meta.image.tag ))
+        inputs:
+        - name: git
+        - name: version
+        outputs: [{name: git-demo}]
+        run:
+          path: sh
+          args:
+          - -ce
+          - |
+            version=$(cat version/version)
+            git clone git git-demo
+            cd git-demo
+            sed -i'' "s%image: drnic/jeopardy-nodeselector:.*$%image: drnic/jeopardy-nodeselector:v${version}%" demo/demo.yaml
+            sed -i'' "s%image: drnic/jeopardy-nodeselector:.*$%image: drnic/jeopardy-nodeselector:v${version}%" demo/src/deployment.yaml
+            sed -i'' "s%image: drnic/jeopardy-nodeselector:.*$%image: drnic/jeopardy-nodeselector:v${version}%" demo/deploy/deployment.yaml
 
   - name: pre
     public: true
