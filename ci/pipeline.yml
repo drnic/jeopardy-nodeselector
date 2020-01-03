@@ -175,6 +175,25 @@ jobs:
             sed -i'' "s%image: ${image}:.*$%image: ${image}:v${version}%" demo/demo.yaml
             sed -i'' "s%image: ${image}:.*$%image: ${image}:v${version}%" demo/src/deployment.yaml
             sed -i'' "s%image: ${image}:.*$%image: ${image}:v${version}%" demo/deploy/deployment.yaml
+    - task: release
+      config:
+        .: (( inject meta.task_config ))
+        inputs:
+        - name: git-demo
+        - name: version
+        outputs:
+        - name: pushme
+        - name: release
+        params:
+          REPO_ROOT: git-demo
+          REPO_OUT:  pushme
+          RELEASE_ROOT: release
+          RELEASE_NAME: (( grab meta.name ))
+          VERSION_FROM: version/version
+          GIT_EMAIL: (( grab meta.git.email ))
+          GIT_NAME:  (( grab meta.git.name ))
+        run:
+          path: git-demo/ci/scripts/release.sh
 
   - name: pre
     public: true
