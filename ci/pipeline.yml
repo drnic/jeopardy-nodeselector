@@ -194,6 +194,19 @@ jobs:
           GIT_NAME:  (( grab meta.git.name ))
         run:
           path: git-demo/ci/scripts/release.sh
+    - put: git
+      params:
+        rebase: true
+        repository: pushme/git-demo
+    - put: github
+      params:
+        name:   gh/name
+        tag:    gh/tag
+        body:   gh/notes.md
+        globs: [gh/artifacts/*]
+    - put: version
+      params:
+        bump: patch
 
   - name: pre
     public: true
@@ -334,3 +347,10 @@ resources:
       access_key_id:     (( grab meta.aws.access_key ))
       secret_access_key: (( grab meta.aws.secret_key ))
       initial_version:   (( grab meta.initial_version || "0.0.1" ))
+
+  - name: github
+    type: github-release
+    source:
+      user:         (( grab meta.github.owner ))
+      repository:   (( grab meta.github.repo ))
+      access_token: (( grab meta.github.access_token ))
