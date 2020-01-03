@@ -203,7 +203,7 @@ jobs:
         name:   gh/name
         tag:    gh/tag
         body:   gh/notes.md
-        globs: [gh/artifacts/*]
+        # globs: [gh/artifacts/*]
     - put: version
       params:
         bump: patch
