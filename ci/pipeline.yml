@@ -55,6 +55,7 @@ groups:
       - build-latest
       - rc
       - pre
+      - shipit
   - name: versioning
     jobs:
       - major
@@ -112,8 +113,7 @@ jobs:
             echo "latest-amd64" > tags/amd64
             echo "latest-arm64" > tags/arm64
             echo "latest-armhf" > tags/armhf
-
-    - put: latest
+    - put: image-manifest
       params:
         tag_file: tags/version
         manifests:
@@ -126,6 +126,52 @@ jobs:
         - arch: arm
           os: linux
           tag_file: tags/armhf
+
+  - name: shipit
+    public: true
+    serial: true
+    plan:
+    - do:
+      - in_parallel:
+          steps:
+          - { get: version, passed: [rc], params: {bump: final} }
+          - { get: git,     passed: [rc] }
+          - { get: amd64,   passed: [build-latest], params: {skip_download: true} }
+          - { get: arm64,   passed: [build-latest], params: {skip_download: true} }
+          - { get: armhf,   passed: [build-latest], params: {skip_download: true} }
+    - task: tag-files
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: (( grab meta.image.name ))
+            tag:        (( grab meta.image.tag ))
+        inputs:
+        - name: version
+        - name: amd64
+        - name: arm64
+        - name: armhf
+        outputs: [{name: tags}]
+        run:
+          path: sh
+          args:
+          - -ceux
+          - |
+            echo "v$(cat version/version)" > tags/version
+    - put: image-manifest
+      params:
+        tag_file: tags/version
+        manifests:
+        - arch: amd64
+          os: linux
+          digest_file: amd64/digest
+        - arch: arm64
+          os: linux
+          digest_file: arm64/digest
+        - arch: arm
+          os: linux
+          digest_file: armhf/digest
 
   - name: pre
     public: true
@@ -232,7 +278,8 @@ resource_types:
 - name: docker-manifest
   type: docker-image
   source:
-    repository: mbialon/concourse-docker-manifest-resource
+    # repository: mbialon/concourse-docker-manifest-resource
+    repository: drnic/concourse-docker-manifest-resource
 resources:
   - name: git
     type: git
@@ -259,7 +306,7 @@ resources:
       .: (( inject meta.dockerhub ))
       tag: latest-armhf
 
-  - name: latest
+  - name: image-manifest
     type: docker-manifest
     source:
       .: (( inject meta.dockerhub ))
