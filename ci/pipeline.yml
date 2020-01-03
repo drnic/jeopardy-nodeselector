@@ -18,9 +18,13 @@ meta:
   target:   (( param "Please identify the name of the target Concourse CI" ))
   url:      (( param "Please specify the full url of the target Concourse CI" ))
   pipeline: (( grab meta.name ))
-  image:
-    name: starkandwayne/concourse
-    tag: latest
+  task_config:
+    platform: linux
+    image_resource:
+      type: docker-image
+      source:
+        repository: starkandwayne/concourse
+        tag:        latest
 
   docker:
     dockerfile: "Dockerfile"
@@ -97,12 +101,7 @@ jobs:
             dockerfile: (( concat "git/" meta.docker.dockerfile ))
     - task: tag-files
       config:
-        platform: linux
-        image_resource:
-          type: docker-image
-          source:
-            repository: (( grab meta.image.name ))
-            tag:        (( grab meta.image.tag ))
+        .: (( inject meta.task_config ))
         outputs: [{name: tags}]
         run:
           path: sh
@@ -141,12 +140,7 @@ jobs:
           - { get: armhf,   passed: [build-latest], params: {skip_download: true} }
     - task: tag-files
       config:
-        platform: linux
-        image_resource:
-          type: docker-image
-          source:
-            repository: (( grab meta.image.name ))
-            tag:        (( grab meta.image.tag ))
+        .: (( inject meta.task_config ))
         inputs:
         - name: version
         - name: amd64
@@ -174,12 +168,7 @@ jobs:
           digest_file: armhf/digest
     - task: update-demo
       config:
-        platform: linux
-        image_resource:
-          type: docker-image
-          source:
-            repository: (( grab meta.image.name ))
-            tag:        (( grab meta.image.tag ))
+        .: (( inject meta.task_config ))
         inputs:
         - name: git
         - name: version
@@ -212,12 +201,7 @@ jobs:
         trigger: true
       - task: release-notes
         config:
-          platform: linux
-          image_resource:
-            type: docker-image
-            source:
-              repository: starkandwayne/concourse
-              tag: latest
+          .: (( inject meta.task_config ))
           run:
             path: sh
             args:
@@ -249,14 +233,9 @@ jobs:
       - { get: version, trigger: false, params: {pre: rc} }
       - task: release-notes
         config:
-          platform: linux
-          image_resource:
-            type: docker-image
-            source:
-              repository: (( grab meta.image.name ))
-              tag:        (( grab meta.image.tag ))
+          .: (( inject meta.task_config ))
           inputs:
-              - { name: git }
+          - { name: git }
           run:
             path: sh
             args:
