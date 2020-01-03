@@ -118,7 +118,7 @@ jobs:
         manifests:
         - {arch: amd64, os: linux, tag_file: tags/amd64}
         - {arch: arm64, os: linux, tag_file: tags/arm64}
-        - {arch: arm,   os: linux, tag_file: tags/armhf}
+        - {arch: arm,   os: linux, tag_file: tags/armhf, variant: "v7"}
 
   - name: shipit
     public: true
@@ -153,7 +153,7 @@ jobs:
         manifests:
         - { arch: amd64, os: linux, digest_file: amd64/digest }
         - { arch: arm64, os: linux, digest_file: arm64/digest }
-        - { arch: arm,   os: linux, digest_file: armhf/digest }
+        - { arch: arm,   os: linux, digest_file: armhf/digest, variant: "v7" }
     - task: update-demo
       config:
         .: (( inject meta.task_config ))
