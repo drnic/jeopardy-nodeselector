@@ -2,17 +2,17 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   labels:
-    k8s-app: whats-my-arch
-  name: whats-my-arch
+    k8s-app: ds-whats-my-arch
+  name: ds-whats-my-arch
   namespace: multiarch-test
 spec:
   selector:
     matchLabels:
-      k8s-app: whats-my-arch
+      k8s-app: ds-whats-my-arch
   template:
     metadata:
       labels:
-        k8s-app: whats-my-arch
+        k8s-app: ds-whats-my-arch
     spec:
       containers:
       - image: busybox

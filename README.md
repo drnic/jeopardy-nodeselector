@@ -27,8 +27,13 @@ This creates a namespace `multiarch-test`, and the demo webhook will only activa
 The `demo/test-resources/` folder contains various pods, deployments, etc that deploy into the `multiarch-test` namespace:
 
 ```plain
-kubectl apply -f demo/test-resources/pod.yaml
-kubectl apply -f demo/test-resources/deployment.yaml
+$ kubectl apply -f demo/test-resources/
+daemonset.apps/ds-whats-my-arch created
+deployment.apps/multiarch-nginx created
+deployment.apps/singlearch-nginx created
+job.batch/job-whats-my-arch created
+pod/multiarch-nginx created
+pod/singlearch-nginx created
 ```
 
 Check that it's `nodeSelector` has been assigned automatically to each resulting pod:

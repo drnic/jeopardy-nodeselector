@@ -2,8 +2,8 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   labels:
-    job-name: whats-my-arch
-  name: whats-my-arch
+    job-name: job-whats-my-arch
+  name: job-whats-my-arch
   namespace: multiarch-test
 spec:
   backoffLimit: 6
@@ -12,7 +12,7 @@ spec:
   template:
     metadata:
       labels:
-        job-name: whats-my-arch
+        job-name: job-whats-my-arch
     spec:
       containers:
       - command:
