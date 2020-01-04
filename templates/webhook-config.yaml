@@ -5,7 +5,7 @@ metadata:
   name: multiarch-test
   labels:
     {{- include "jeopardy-nodeselector.labels" . | nindent 4 }}
-    multiarch: "true"
+    jeopardy-nodeselector: enabled
 ---
 # Required to stay with v1beta1 due to https://github.com/elithrar/admission-control/issues/20
 apiVersion: admissionregistration.k8s.io/v1beta1
@@ -19,17 +19,15 @@ metadata:
     certmanager.k8s.io/inject-ca-from: {{ .Release.Namespace }}/{{ include "jeopardy-nodeselector.fullname" . }}-certs
 webhooks:
   - name: {{ include "jeopardy-nodeselector.fullname" . }}.{{ .Release.Namespace }}.webhooks.starkandwayne.com
+    # namespaceSelector examples https://godoc.org/k8s.io/api/admissionregistration/v1beta1#MutatingWebhook.MatchPolicy
     namespaceSelector:
       matchExpressions:
         # Any Namespace with a label matching the below will have its
         # annotations validated by this admission controller
-        - key: "multiarch"
+        - key: "jeopardy-nodeselector"
           operator: In
-          values: ["true"]
+          values: ["enabled"]
     sideEffects: None
-    # "Equivalent" provides insurance against API version upgrades/changes - e.g.
-    # extensions/v1beta1 Ingress -> networking.k8s.io/v1beta1 Ingress
-    # matchPolicy: Equivalent
     rules:
       - apiGroups:
           - ""

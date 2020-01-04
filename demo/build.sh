@@ -79,7 +79,7 @@ metadata:
   # Create a namespace that we'll match on
   name: multiarch-test
   labels:
-    multiarch: "true"
+    jeopardy-nodeselector: enabled
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
@@ -88,9 +88,6 @@ metadata:
 webhooks:
   - name: jeopardy-nodeselector.starkandwayne.com
     sideEffects: None
-    # "Equivalent" provides insurance against API version upgrades/changes - e.g.
-    # extensions/v1beta1 Ingress -> networking.k8s.io/v1beta1 Ingress
-    # matchPolicy: Equivalent
     rules:
       - apiGroups:
           - ""
@@ -125,9 +122,9 @@ webhooks:
       matchExpressions:
         # Any Namespace with a label matching the below will have its
         # annotations validated by this admission controller
-        - key: "multiarch"
+        - key: "jeopardy-nodeselector"
           operator: In
-          values: ["true"]
+          values: ["enabled"]
     failurePolicy: Fail
     clientConfig:
       service:

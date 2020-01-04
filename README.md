@@ -14,6 +14,8 @@
 
 Look up each OCI in pods/deployments/statefulsets/jobs and ensure the pods are restricted to nodes that support the image platform architecture.
 
+Active in any namespace with label `jeopardy-nodeselector: enabled`.
+
 ## Quick Demo
 
 To deploy the webhook server into the `default` namespace, including a self-signed certificate, and webhook registration:
@@ -22,7 +24,7 @@ To deploy the webhook server into the `default` namespace, including a self-sign
 kubectl apply -f demo/demo.yaml
 ```
 
-This creates a namespace `multiarch-test`, and the demo webhook will only activate on resources created or updated within this namespace (technically, within any namespace labelled `multiarch: "true"`).
+This creates a namespace `multiarch-test`, and the demo webhook will only activate on resources created or updated within this namespace (technically, within any namespace labelled `jeopardy-nodeselector: enabled`).
 
 The `demo/test-resources/` folder contains various pods, deployments, etc that deploy into the `multiarch-test` namespace:
 
