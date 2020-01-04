@@ -22,13 +22,16 @@ To deploy the webhook server into the `default` namespace, including a self-sign
 kubectl apply -f demo/demo.yaml
 ```
 
-To test the webhook with an "amd64-only" image into the newly created `multiarch-test` namespace:
+This creates a namespace `multiarch-test`, and the demo webhook will only activate on resources created or updated within this namespace (technically, within any namespace labelled `multiarch: "true"`).
+
+The `demo/test-resources/` folder contains various pods, deployments, etc that deploy into the `multiarch-test` namespace:
 
 ```plain
-kubectl run --image bitnami/nginx nginx-amd64 -n multiarch-test
+kubectl apply -f demo/test-resources/pod.yaml
+kubectl apply -f demo/test-resources/deployment.yaml
 ```
 
-Check that it's `nodeSelector` has been assigned automatically:
+Check that it's `nodeSelector` has been assigned automatically to each resulting pod:
 
 ```plain
 $ kubectl describe pod -n multiarch-test
@@ -40,6 +43,8 @@ Events:
   Normal  Scheduled  <unknown>  default-scheduler       Successfully assigned multiarch-test/nginx-amd64-684b5dd9bd-cv6qb to my-amd64-node
   Normal  Pulling    5s         kubelet, my-amd64-node  Pulling image "bitnami/nginx"
 ```
+
+### Complex demo - Ghost/MariaDB
 
 You can now deploy complex sets of things without worrying whether you need to determine nodeSelectors. For example, the Ghost helm chart uses images that only run on `amd64`. But you don't need to know this anymore:
 
@@ -55,7 +60,9 @@ ghost-57f665d946-bh56s   1/1     Running   lattepanda
 
 Both the `mariadb` and `ghost` pods are assigned to the `amd64` lattepanda node.
 
-To clean up the webhook service, configuration, and the demo namespace:
+### Demo Cleanup
+
+To clean up the webhook service, configuration, and the `multiarch-test` namespace:
 
 ```plain
 kubectl delete -f demo/demo.yaml

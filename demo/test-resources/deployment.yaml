@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    run: multiarch-nginx
+  name: multiarch-nginx
+  namespace: multiarch-test
+spec:
+  selector:
+    matchLabels:
+      run: multiarch-nginx
+  template:
+    metadata:
+      labels:
+        run: multiarch-nginx
+    spec:
+      containers:
+      - image: nginx
+        imagePullPolicy: Always
+        name: nginx
+        resources: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    run: singlearch-nginx
+  name: singlearch-nginx
+  namespace: multiarch-test
+spec:
+  selector:
+    matchLabels:
+      run: singlearch-nginx
+  template:
+    metadata:
+      labels:
+        run: singlearch-nginx
+    spec:
+      containers:
+      - image: bitnami/nginx
+        imagePullPolicy: Always
+        name: nginx
+        resources: {}
+---
