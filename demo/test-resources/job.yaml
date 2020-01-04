@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    job-name: whats-my-arch
+  name: whats-my-arch
+  namespace: multiarch-test
+spec:
+  backoffLimit: 6
+  completions: 1
+  parallelism: 1
+  template:
+    metadata:
+      labels:
+        job-name: whats-my-arch
+    spec:
+      containers:
+      - command:
+        - uname
+        - -a
+        image: busybox
+        imagePullPolicy: Always
+        name: whats-my-arch
+        resources: {}
+      restartPolicy: Never

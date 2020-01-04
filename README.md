@@ -44,6 +44,19 @@ Events:
   Normal  Pulling    5s         kubelet, my-amd64-node  Pulling image "bitnami/nginx"
 ```
 
+In addition to the pod having its `spec.nodeSelector` mutated, the original resource (deployment, job) should have also been mutated. This is not visible via `kubectl describe <resource>`. Instead we need to trawl through YAML or JSON:
+
+```plain
+$ kubectl get job -n multiarch-test -oyaml
+...
+spec:
+  template:
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: arm
+...
+```
+
 ### Complex demo - Ghost/MariaDB
 
 You can now deploy complex sets of things without worrying whether you need to determine nodeSelectors. For example, the Ghost helm chart uses images that only run on `amd64`. But you don't need to know this anymore:

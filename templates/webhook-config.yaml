@@ -41,6 +41,17 @@ webhooks:
         resources:
           - "pods"
           - "deployments"
+          - "statefulsets"
+          - "daemonsets"
+      - apiGroups:
+          - "batch"
+        apiVersions:
+          - "*"
+        operations:
+          - "CREATE"
+          - "UPDATE"
+        resources:
+          - "jobs"
     failurePolicy: Fail
     clientConfig:
       service:
