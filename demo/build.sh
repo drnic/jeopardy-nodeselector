@@ -93,7 +93,7 @@ webhooks:
     # matchPolicy: Equivalent
     rules:
       - apiGroups:
-          - "*"
+          - ""
         apiVersions:
           - "*"
         operations:
@@ -101,7 +101,26 @@ webhooks:
           - "UPDATE"
         resources:
           - "pods"
+      - apiGroups:
+          - "apps"
+        apiVersions:
+          - "*"
+        operations:
+          - "CREATE"
+          - "UPDATE"
+        resources:
           - "deployments"
+          - "statefulsets"
+          - "daemonsets"
+      - apiGroups:
+          - "batch"
+        apiVersions:
+          - "*"
+        operations:
+          - "CREATE"
+          - "UPDATE"
+        resources:
+          - "jobs"
     namespaceSelector:
       matchExpressions:
         # Any Namespace with a label matching the below will have its
