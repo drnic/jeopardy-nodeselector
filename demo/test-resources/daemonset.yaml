@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    k8s-app: whats-my-arch
+  name: whats-my-arch
+  namespace: multiarch-test
+spec:
+  selector:
+    matchLabels:
+      k8s-app: whats-my-arch
+  template:
+    metadata:
+      labels:
+        k8s-app: whats-my-arch
+    spec:
+      containers:
+      - image: busybox
+        name: uname
+        command:
+        - sh
+        - -ec
+        - |
+          while :; do
+            uname -a
+            sleep 600
+          done
