@@ -7,6 +7,7 @@ metadata:
     {{- include "jeopardy-nodeselector.labels" . | nindent 4 }}
     multiarch: "true"
 ---
+# Required to stay with v1beta1 due to https://github.com/elithrar/admission-control/issues/20
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
 metadata:

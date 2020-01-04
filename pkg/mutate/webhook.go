@@ -7,6 +7,7 @@ import (
 
 	admissioncontrol "github.com/elithrar/admission-control"
 
+	// Required to stay with v1beta1 due to https://github.com/elithrar/admission-control/issues/20
 	admission "k8s.io/api/admission/v1beta1"
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1"
