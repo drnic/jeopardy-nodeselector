@@ -30,7 +30,7 @@ spec:
       serviceAccount: jeopardy-nodeselector
       containers:
         - name: server
-          image: drnic/jeopardy-nodeselector:v0.3.1
+          image: drnic/jeopardy-nodeselector:v0.3.2
           command: ["/usr/bin/jeopardy-nodeselector"]
           args:
             [
