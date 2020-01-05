@@ -53,6 +53,11 @@ meta:
     password:   (( param "Please specify the password for your Dockerhub account" ))
     repository: (( param "Please specify the name of the image (repo/name) that you are building" ))
 
+  chartmuseum:
+    uri: https://helm.starkandwayne.com
+    user: (( param "Please provide basic auth user for chartmuseum" ))
+    pass: (( param "Please provide basic auth password for chartmuseum" ))
+
 groups:
   - name: (( grab meta.name ))
     jobs:
@@ -172,6 +177,40 @@ jobs:
             sed -i'' "s%image: ${image}:.*$%image: ${image}:v${version}%" demo/src/deployment.yaml
             sed -i'' "s%image: ${image}:.*$%image: ${image}:v${version}%" demo/deploy/deployment.yaml
             sed -i'' "s%tag:.*$%tag: v${version}%" values.yaml
+    - task: publish-chart
+      config:
+        .: (( inject meta.task_config ))
+        inputs:
+        - name: git-demo
+        outputs:
+        - name: gh
+        params:
+          CHART_ROOT: git-demo
+          CHART_NAME: (( grab meta.name ))
+          HELM_REPO_URI:  (( grab meta.chartmuseum.uri ))
+          HELM_REPO_USER: (( grab meta.chartmuseum.user))
+          HELM_REPO_PASS: (( grab meta.chartmuseum.pass))
+          RELEASE_ROOT: gh-artifacts
+        run:
+          path: sh
+          args:
+          - -cex
+          - |
+            echo "Installing Helm 3 cli"
+            curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+            ( set -x ;
+              helm lint ${CHART_ROOT}
+              helm package ${CHART_ROOT} -d ${RELEASE_ROOT}
+              helm repo add our-repo ${HELM_REPO_URI}
+            )
+            echo "Uploading helm chart to chartmuseum at ${HELM_REPO_URI}"
+            artifact=$(ls ${RELEASE_ROOT}/${CHART_NAME}*.tgz)
+            ( set -x ;
+              curl --data-binary "@${artifact}" \
+                -u "${HELM_REPO_USER}:${HELM_REPO_PASS}" \
+                ${HELM_REPO_URI}/api/charts
+            )
+
     - task: release
       config:
         .: (( inject meta.task_config ))
@@ -197,10 +236,10 @@ jobs:
         repository: pushme/git-demo
     - put: github
       params:
-        name:   gh/name
-        tag:    gh/tag
-        body:   gh/notes.md
-        # globs: [gh/artifacts/*]
+        name:  gh/name
+        tag:   gh/tag
+        body:  gh/notes.md
+        globs: [gh-artifacts/*]
     - put: version
       params:
         bump: patch
