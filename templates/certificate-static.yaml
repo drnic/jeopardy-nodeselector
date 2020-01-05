@@ -8,7 +8,7 @@ data:
 kind: Secret
 metadata:
   name: jeopardy-nodeselector-certs
-  namespace: default
+  namespace: {{ .Release.Namespace }}
   annotations:
     cert-manager.io/allow-direct-injection: "true"
 {{- end -}}

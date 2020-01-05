@@ -92,19 +92,28 @@ kubectl delete -f demo/demo.yaml
 
 ### Requirements
 
-The Helm chart currently requires Cert Manager to create a self-signed certificate pair for the server, using a known self-signed CA (which is hard-coded into the webhook configuration as `caBundle`).
+The Helm chart currently requires [Cert Manager](https://cert-manager.io) to create a self-signed certificate pair for the server, using a known self-signed CA (which is hard-coded into the webhook configuration as `caBundle`).
+
+If you install the Helm chart and Cert Manager is not yet installed you'll get an error like:
+
+```plain
+Error: UPGRADE FAILED: unable to recognize "": no matches for kind "Issuer" in version "cert-manager.io/v1alpha2"
+```
 
 ### Steps
 
 ```plain
-helm install jeopardy-nodeselector . --set "certificate.static=true" -n default
+kubectl create ns jeopardy-nodeselector
+helm upgrade --install jeopardy-nodeselector . \
+    -n jeopardy-nodeselector \
+    --set "certificate.static=true"
 ```
 
 ### Uninstall
 
 ```plain
-helm delete jeopardy-nodeselector
-kubectl delete secret jeopardy-nodeselector-certs
+helm delete jeopardy-nodeselector -n jeopardy-nodeselector
+kubectl delete ns jeopardy-nodeselector
 ```
 
 ## Local demo
