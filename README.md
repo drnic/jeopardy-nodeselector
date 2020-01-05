@@ -111,6 +111,8 @@ helm upgrade --install jeopardy-nodeselector . \
 
 ### Uninstall
 
+To deregister the webhook configuration, delete the running server, the `multiarch-test` namespace, and other configuration:
+
 ```plain
 helm delete jeopardy-nodeselector -n jeopardy-nodeselector
 kubectl delete ns jeopardy-nodeselector
