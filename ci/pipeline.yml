@@ -184,7 +184,7 @@ jobs:
         inputs:
         - name: git-demo
         outputs:
-        - name: gh
+        - name: gh-artifacts
         params:
           CHART_ROOT: git-demo
           CHART_NAME: (( grab meta.name ))
