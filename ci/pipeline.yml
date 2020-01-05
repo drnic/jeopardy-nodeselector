@@ -177,7 +177,7 @@ jobs:
             sed -i'' "s%image: ${image}:.*$%image: ${image}:v${version}%" demo/src/deployment.yaml
             sed -i'' "s%image: ${image}:.*$%image: ${image}:v${version}%" demo/deploy/deployment.yaml
             sed -i'' "s%tag:.*$%tag: v${version}%" values.yaml
-            sed -i'' "s%version:.*$%version:${version}%" Chart.yaml
+            sed -i'' "s%version:.*$%version: ${version}%" Chart.yaml
     - task: publish-chart
       config:
         .: (( inject meta.task_config ))
